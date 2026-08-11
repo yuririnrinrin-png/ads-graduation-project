@@ -13,6 +13,7 @@
 - **公開モック:** https://ti-amo-jewelry-studio.surge.sh
 - **合意した要件:** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
 - **画面・処理の設計:** [docs/DESIGN.md](docs/DESIGN.md)
+- **UI/UX・エンジニアレビュー結果:** [docs/REVIEW.md](docs/REVIEW.md)（Phase 1着手前に確認すること）
 
 ## ひとことで言うと
 
