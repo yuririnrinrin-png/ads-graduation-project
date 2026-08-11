@@ -2,22 +2,58 @@
 
 イタリアンゴールドジュエリーの EC 向けに、商品写真 3 枚から掲載用 10 枚を自動生成する社内ツール（卒業制作）。
 
-## いまの状態
-
-| フェーズ | 内容 | 状態 |
-|---|---|---|
-| Phase 0 | 完成形 UI モック（見た目・画面フロー） | 完了（レビュー反映済み） |
-| Phase 1〜 | Next.js + Python ワーカーでの本実装 | 着手中 |
-
-- **UI モック（ローカル）:** [docs/mockups/product-ui.html](docs/mockups/product-ui.html)
-- **公開モック:** https://ti-amo-jewelry-studio.surge.sh
-- **合意した要件:** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
-- **画面・処理の設計:** [docs/DESIGN.md](docs/DESIGN.md)
-- **UI/UX・エンジニアレビュー結果:** [docs/REVIEW.md](docs/REVIEW.md)（反映方針を含む）
-
 ## ひとことで言うと
 
 自社 EC 担当が、ほぼそのまま商品ページに載せられる 10 枚を、数分で揃える。
+
+## ロードマップ
+
+```
+ Ti amo Jewelry Studio
+ =====================
+
+ [完了] Phase 0  完成形UIモック
+    |
+    v
+ [完了] Phase 1  骨組み
+    |            認証 / ジョブCRUD / ダミー10枚ZIP / UI寄せ
+    |
+    v
+ [完了] Phase 2  ディテール3枚
+    |            3枚UP → 切り抜き → 背景+地金
+    |
+    v
+ [今ここ] Phase 3  人物シーン + 実物合成
+    |              着用4 / 全身2 / 引き+インセット + transform
+    |
+    v
+ [未] Phase 4  レビュー完成
+    |           インセット選び直し / 枠再生成 / 進捗磨き / プリセット追加
+    |
+    v
+ [未] Phase 5  本番固め
+                画質 / リトライ / 14日削除 / デプロイ
+
+ ユーザーの流れ（完成時）:
+  ログイン → 3枚UP+設定 → 待つ → 直す → ZIP
+```
+
+| Phase | 内容 | 状態 |
+|---|---|---|
+| 0 | 完成形 UI モック | **完了** |
+| 1 | monorepo・認証・ジョブ CRUD・UI モック寄せ | **完了** |
+| 2 | 切り抜き＋背景＋地金でディテール 3 枚 | **完了** |
+| 3 | 人物シーン生成＋実物合成＋ transform | **着手中**（ローカル仮シーン） |
+| 4 | インセット選び直し・枠再生成・進捗・プリセット | 未着手 |
+| 5 | 画質・リトライ・14 日削除・デプロイ | 未着手 |
+
+## ドキュメント
+
+- **公開モック:** https://ti-amo-jewelry-studio.surge.sh
+- **ローカルモック:** [docs/mockups/product-ui.html](docs/mockups/product-ui.html)
+- **要件:** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
+- **設計:** [docs/DESIGN.md](docs/DESIGN.md)
+- **レビュー記録:** [docs/REVIEW.md](docs/REVIEW.md)
 
 ## 出力 10 枚の内訳
 
@@ -26,25 +62,59 @@
 3. **全身コーディネート 2 枚** — トーンを 2 つ選択  
 4. **引き＋右下インセット 1 枚** — 雰囲気とサイズ感を 1 枚で両立  
 
-## 技術方針（確定）
+## 技術方針
 
 - **画面:** Next.js（App Router）＋共有社内ログイン  
-- **メタデータ正本:** Postgres（Redis はキュー専用）  
-- **処理:** Python ワーカー（切り抜き・合成・ZIP）。1ジョブ＝1プロセス＋チェックポイント  
-- **人物:** 画像生成 API（初期 fal.ai Flux 系）※ジュエリーは描かせない  
-- **商品:** 実物写真の切り抜き合成で実物を守る  
-- **キュー / 保存:** Redis + RQ、S3 互換ストレージ  
+- **メタデータ正本:** Postgres（Redis はキュー）  
+- **処理:** Python ワーカー。1ジョブ＝1プロセス＋チェックポイント  
+- **商品:** 実物写真の切り抜き合成（AI にジュエリーを描かせない）  
+- **人物:** 本番は画像生成 API（未決）。いまは同一 persona のローカル仮シーン  
 
-詳細は [docs/DESIGN.md](docs/DESIGN.md) を参照。
+詳細は [docs/DESIGN.md](docs/DESIGN.md)。
 
-## リポジトリ構成（Phase 1）
+## リポジトリ構成
 
 ```
-apps/web/          # Next.js（認証・ジョブ CRUD・ダミー ZIP）
-apps/worker/       # Python ワーカー（Phase 2 以降で本実装）
+apps/web/          # Next.js（画面・API・認証）
+apps/worker/       # Python ワーカー（切り抜き・シーン・合成）
 packages/shared/   # スロット定義・ZIP ファイル名・カテゴリ
 docker-compose.yml # Postgres / Redis / MinIO
 docs/              # 要件・設計・モック
 ```
 
-起動手順は [apps/web/README.md](apps/web/README.md)。
+## 起動
+
+手順の正本は [apps/web/README.md](apps/web/README.md)。ワーカーは [apps/worker/README.md](apps/worker/README.md)。
+
+```bash
+# リポジトリルート
+cp .env.example apps/web/.env
+cp .env.example apps/web/.env.local
+docker compose up -d
+npm install
+npm run db:generate
+npm run db:push
+npm run db:seed
+npm run dev
+```
+
+別ターミナル:
+
+```bash
+cd apps/worker
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python -m worker.pipeline
+```
+
+- http://localhost:3000  
+- ログイン: `ec-team` / `studio`（`.env.local` で変更可）
+
+## いまできること
+
+- 共有ログイン・ジョブ一覧（全件）・削除  
+- 商品写真 3 枚アップロード＋プリセットでジョブ作成  
+- 切り抜き → ディテール 3 枚  
+- 人物シーン（ローカル仮）＋実物合成（着用・全身・引き+インセット）  
+- レビューで大きさ・位置調整 → ZIP ダウンロード  

@@ -1,5 +1,7 @@
 # Phase 1–3 — Web app
 
+起動・ログイン・いまできることの概要はリポジトリ直下の [README.md](../../README.md) を正とします。
+
 ## 前提
 
 - Node.js 20+
@@ -33,12 +35,8 @@ python -m worker.pipeline
 ブラウザで http://localhost:3000  
 ログイン: `ec-team` / `studio`
 
-## いまできること
+## Web 側のメモ
 
-- 商品3枚 UP → 切り抜き → ディテール3
-- 人物シーン（ローカル仮）＋実物合成（着用・全身・引き+インセット）
-- レビューで大きさ・位置調整（確定で再合成）
-- ZIP / ジョブ削除 / 全件一覧
-
-人物の本番AI（顔固定）・枠の再生成 UI は Phase 4 以降／未決事項。  
-見た目の正本: [公開モック](https://ti-amo-jewelry-studio.surge.sh)
+- ジョブ受付・進捗ポーリング・プレビュー配信・ZIP・大きさ/位置の再合成はここ
+- 重い切り抜き・シーン・初回合成は `apps/worker`
+- 見た目の正本: [公開モック](https://ti-amo-jewelry-studio.surge.sh) / `docs/mockups/product-ui.html`
