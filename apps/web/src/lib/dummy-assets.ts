@@ -4,15 +4,20 @@ import sharp from "sharp";
 import archiver from "archiver";
 import { PassThrough } from "stream";
 import { SLOT_KEYS, ZIP_FILENAMES, type SlotKey } from "@ti-amo/shared";
+import { jobDir } from "@/lib/queue";
 
-const DATA_ROOT = path.join(process.cwd(), ".data");
+export { jobDir } from "@/lib/queue";
 
-export function jobDir(jobId: string) {
-  return path.join(DATA_ROOT, "jobs", jobId);
+/** Remove on-disk job folder (preview JPEGs etc.). Missing dir is OK. */
+export async function removeJobDir(jobId: string) {
+  await fs.rm(jobDir(jobId), { recursive: true, force: true });
 }
 
-/** Phase 1: solid-color placeholder JPEGs (2000×2000) with slot label. */
-export async function writeDummySlotImages(jobId: string): Promise<Record<SlotKey, string>> {
+/** Placeholder JPEGs for slots not yet produced by the worker (Phase 2: wear/body still dummy). */
+export async function writeDummySlotImages(
+  jobId: string,
+  onlySlots?: SlotKey[]
+): Promise<Record<string, string>> {
   const dir = path.join(jobDir(jobId), "preview");
   await fs.mkdir(dir, { recursive: true });
 
@@ -29,22 +34,23 @@ export async function writeDummySlotImages(jobId: string): Promise<Record<SlotKe
     wide_inset: { r: 120, g: 110, b: 100 },
   };
 
-  const keys: Partial<Record<SlotKey, string>> = {};
+  const slots = onlySlots ?? [...SLOT_KEYS];
+  const keys: Record<string, string> = {};
 
-  for (const slot of SLOT_KEYS) {
+  for (const slot of slots) {
     const file = path.join(dir, ZIP_FILENAMES[slot]);
     const { r, g, b } = colors[slot];
     const svg = `
       <svg width="2000" height="2000" xmlns="http://www.w3.org/2000/svg">
         <rect width="2000" height="2000" fill="rgb(${r},${g},${b})"/>
         <text x="1000" y="980" text-anchor="middle" font-size="72" font-family="Arial, sans-serif" fill="#1A1612">${slot}</text>
-        <text x="1000" y="1080" text-anchor="middle" font-size="40" font-family="Arial, sans-serif" fill="#5C534A">Phase 1 dummy</text>
+        <text x="1000" y="1080" text-anchor="middle" font-size="40" font-family="Arial, sans-serif" fill="#5C534A">placeholder</text>
       </svg>`;
     await sharp(Buffer.from(svg)).jpeg({ quality: 85 }).toFile(file);
     keys[slot] = file;
   }
 
-  return keys as Record<SlotKey, string>;
+  return keys;
 }
 
 export async function buildZipBuffer(jobId: string): Promise<Buffer> {

@@ -7,9 +7,9 @@ export async function GET() {
   if (error) return error;
 
   const [personas, backgrounds, tones] = await Promise.all([
-    prisma.presetPersona.findMany({ orderBy: { name: "asc" } }),
-    prisma.presetBackground.findMany({ orderBy: { name: "asc" } }),
-    prisma.presetTone.findMany({ orderBy: { name: "asc" } }),
+    prisma.presetPersona.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.presetBackground.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.presetTone.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
 
   return NextResponse.json({ personas, backgrounds, tones });

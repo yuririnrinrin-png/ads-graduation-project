@@ -1,22 +1,39 @@
-# Ti amo Jewelry Studio — Python worker (Phase 1 stub)
+# Ti amo Jewelry Studio — Python worker (Phase 2–3)
 
-Phase 1 では Web 側がダミー10枚を直接生成します。  
-このディレクトリは Phase 2 以降の切り抜き・合成パイプライン用の骨組みです。
+Redis キュー `tiamo:jobs` を待ち、1ジョブずつ:
 
-## 想定
+`ingest → cutout → detail → scene → composite → inset → ready`
 
-- Redis + RQ でジョブを受ける
-- 1ジョブ = 1プロセスが7段階を順実行（チェックポイント保存）
-- 画像生成 API キーはここ（ワーカー）の環境変数のみ
+## 前提
 
-## ローカル（Python 導入後）
+- Docker で Postgres / Redis が起動している
+- `apps/web` と同じ `DATABASE_URL` / `REDIS_URL`
+- 生成ファイルはデフォルトで `apps/web/.data/jobs/...`（`DATA_ROOT` で変更可）
+
+## セットアップ
 
 ```bash
 cd apps/worker
 python -m venv .venv
-# Windows: .venv\Scripts\activate
+# Windows:
+.venv\Scripts\activate
 pip install -r requirements.txt
-rq worker tiamo --url redis://localhost:6379
+python -m worker.pipeline
 ```
 
-`worker/pipeline.py` の `run_job` が本実装の入口です。
+単発実行（デバッグ）:
+
+```bash
+python -m worker.pipeline run <jobId>
+```
+
+## Phase の中身
+
+| 段階 | 内容 |
+|---|---|
+| cutout / detail | 淡色背景マット＋背景・地金（Phase 2） |
+| scene | 人物シーン7枚（いまは同一 persona のローカル仮生成。FAL 等は未決差し替え） |
+| composite | メイン切り抜きをカテゴリ別アンカーに合成。transform 保存 |
+| inset | 引きにディテールAを右下インセット |
+
+レビュー画面の大きさ・位置変更は Web（sharp）が scene＋cutout から再合成します。

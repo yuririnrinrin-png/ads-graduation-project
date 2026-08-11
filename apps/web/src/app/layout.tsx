@@ -19,22 +19,24 @@ export default async function RootLayout({
     <html lang="ja">
       <body>
         <div className="app-shell">
-          <header className="topbar">
-            <a href="/" className="brand">
-              Ti amo Jewelry Studio
-            </a>
-            <div className="topbar-right">
-              {session ? (
-                <>
-                  <span className="muted">{session.user?.name}</span>
+          {session ? (
+            <>
+              <header className="topbar">
+                <a href="/" className="brand">
+                  Ti amo Jewelry Studio
+                </a>
+                <div className="topbar-right">
+                  <span>{session.user?.name}</span>
                   <a className="link" href="/api/auth/signout">
                     出る
                   </a>
-                </>
-              ) : null}
-            </div>
-          </header>
-          <main className="main">{children}</main>
+                </div>
+              </header>
+              <main className="main">{children}</main>
+            </>
+          ) : (
+            <main className="main-auth">{children}</main>
+          )}
         </div>
       </body>
     </html>

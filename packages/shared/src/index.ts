@@ -59,6 +59,43 @@ export const ZIP_FILENAMES: Record<SlotKey, string> = {
   wide_inset: "10_wide_inset.jpg",
 };
 
+/** Short UI labels for review grid. */
+export const SLOT_LABELS: Record<SlotKey, string> = {
+  detail_a: "ディテール A",
+  detail_b: "ディテール B",
+  detail_c: "ディテール C",
+  wear_office: "オフィス",
+  wear_cafe: "カフェ",
+  wear_date: "デート",
+  wear_holiday: "休日",
+  body_1: "全身トーン1",
+  body_2: "全身トーン2",
+  wide_inset: "引き + インセット",
+};
+
+/** Badge text on thumbnails (mock style). */
+export const SLOT_BADGES: Record<SlotKey, string> = {
+  detail_a: "01 detail_a",
+  detail_b: "02 detail_b",
+  detail_c: "03 detail_c",
+  wear_office: "04 office",
+  wear_cafe: "05 cafe",
+  wear_date: "06 date",
+  wear_holiday: "07 holiday",
+  body_1: "08 body · トーン1",
+  body_2: "09 body · トーン2",
+  wide_inset: "10 wide_inset",
+};
+
+/** User-facing progress steps (DESIGN §3 / mock Screen 03). */
+export const PROGRESS_STEPS = [
+  { key: "cutout", label: "切り抜き" },
+  { key: "detail", label: "ディテール（背景・色調整）" },
+  { key: "scene", label: "人物シーン生成" },
+  { key: "composite", label: "実物合成" },
+  { key: "inset", label: "仕上げ（インセット）" },
+] as const;
+
 export const PIPELINE_STAGES = [
   "ingest",
   "cutout",
@@ -91,8 +128,62 @@ export const JOB_STATUSES = [
 
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
+  queued: "待機",
+  running: "生成中",
+  ready: "完了",
+  failed: "失敗",
+  expired: "期限切れ",
+};
+
 /** v1 soft assumption: few concurrent jobs. */
 export const V1_CONCURRENT_JOBS_HINT = 2;
 
 /** Progress polling interval (ms). */
 export const PROGRESS_POLL_MS = 4000;
+
+/** Jewelry placement on person scenes (fractions of 2000×2000 + relative scale). */
+export type SlotTransform = {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+export const DEFAULT_TRANSFORM: SlotTransform = {
+  scale: 1,
+  offsetX: 0,
+  offsetY: 0,
+};
+
+/** Anchor = center of jewelry on canvas (0–1), scale = width vs canvas. */
+export const CATEGORY_ANCHORS: Record<
+  Category,
+  { x: number; y: number; scale: number }
+> = {
+  necklace: { x: 0.5, y: 0.36, scale: 0.28 },
+  earring: { x: 0.63, y: 0.3, scale: 0.1 },
+  ring: { x: 0.58, y: 0.66, scale: 0.13 },
+  bracelet: { x: 0.46, y: 0.55, scale: 0.2 },
+};
+
+/** Full-body frames use a slightly lower / smaller default. */
+export const BODY_ANCHORS: Record<Category, { x: number; y: number; scale: number }> = {
+  necklace: { x: 0.5, y: 0.32, scale: 0.14 },
+  earring: { x: 0.58, y: 0.22, scale: 0.05 },
+  ring: { x: 0.55, y: 0.58, scale: 0.07 },
+  bracelet: { x: 0.48, y: 0.48, scale: 0.1 },
+};
+
+export const WEAR_SLOTS = [
+  "wear_office",
+  "wear_cafe",
+  "wear_date",
+  "wear_holiday",
+] as const;
+
+export const COMPOSITE_SLOTS = [
+  ...WEAR_SLOTS,
+  "body_1",
+  "body_2",
+  "wide_inset",
+] as const;
