@@ -1,0 +1,186 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@400;500;600&display=swap");
+
+:root {
+  --ink: #1a1612;
+  --ink-soft: #2c2520;
+  --ink-muted: #5c534a;
+  --gold: #b8956c;
+  --gold-deep: #8f6f45;
+  --gold-mist: #e8dcc8;
+  --stone: #e6e1d8;
+  --stone-light: #f3f0ea;
+  --danger: #8f3f32;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Outfit, system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at top, #f7f3ec 0%, #e6e1d8 55%, #d8d1c6 100%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 0;
+}
+
+.brand {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.topbar-right {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.link {
+  color: var(--gold-deep);
+}
+
+.card {
+  background: #fff;
+  border: 1px solid rgba(26, 22, 18, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 16px 40px -24px rgba(26, 22, 18, 0.35);
+}
+
+.hero-title {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(2.5rem, 6vw, 3.75rem);
+  line-height: 0.95;
+  margin: 0 0 0.75rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0.6rem;
+  padding: 0.75rem 1.1rem;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btn-primary {
+  background: var(--ink);
+  color: var(--gold-mist);
+}
+
+.btn-gold {
+  background: var(--gold-deep);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: #fff;
+  border: 1px solid rgba(26, 22, 18, 0.15);
+  color: var(--ink-soft);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.field label {
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.field input,
+.field select {
+  border: 1px solid rgba(26, 22, 18, 0.12);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  background: #fff;
+}
+
+.stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--gold-deep);
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.65rem 0.35rem;
+  border-bottom: 1px solid rgba(26, 22, 18, 0.08);
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  background: var(--gold-mist);
+  color: var(--gold-deep);
+}

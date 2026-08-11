@@ -1,7 +1,28 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Next / build
+apps/web/.next/
+apps/web/.data/
+packages/shared/dist/
+dist/
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# OS / IDE
 .tools/
 .DS_Store
 Thumbs.db
 *.log
-.env
-.env.*
-node_modules/
+
+# Python
+.pytest_cache/
+.mypy_cache/

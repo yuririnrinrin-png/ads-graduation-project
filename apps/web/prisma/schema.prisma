@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  queued
+  running
+  ready
+  failed
+  expired
+}
+
+enum PipelineStage {
+  ingest
+  cutout
+  detail
+  scene
+  composite
+  inset
+  ready
+}
+
+model PresetPersona {
+  id        String   @id @default(cuid())
+  name      String
+  imageKey  String?
+  createdAt DateTime @default(now())
+  jobs      Job[]
+}
+
+model PresetBackground {
+  id        String   @id @default(cuid())
+  name      String
+  imageKey  String?
+  createdAt DateTime @default(now())
+  jobs      Job[]
+}
+
+model PresetTone {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model Job {
+  id             String         @id @default(cuid())
+  status         JobStatus      @default(queued)
+  stage          PipelineStage?
+  error          String?
+  category       String
+  metal          String
+  mainIndex      Int            @default(0)
+  toneIds        String[]
+  personaId      String
+  backgroundId   String
+  persona        PresetPersona  @relation(fields: [personaId], references: [id])
+  background     PresetBackground @relation(fields: [backgroundId], references: [id])
+  apiCallCount   Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  expiresAt      DateTime?
+  assets         JobAsset[]
+}
+
+model JobAsset {
+  id         String   @id @default(cuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  slotKey    String?
+  kind       String
+  storageKey String
+  transform  Json?
+  createdAt  DateTime @default(now())
+
+  @@index([jobId, kind])
+}
