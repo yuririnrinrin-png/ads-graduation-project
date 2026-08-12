@@ -48,7 +48,7 @@ BG_BY_NAME = {
 }
 
 # Anchor lists: earrings get 2 anchors (single cutout mirrored onto both ears —
-# no separate left/right shoot needed, REQUIREMENTS 未決 2026-08-12).
+# no separate left/right shoot needed (REQUIREMENTS.md §2 決定 2026-08-12).
 CATEGORY_ANCHORS = {
     "necklace": [{"x": 0.5, "y": 0.36, "scale": 0.28}],
     "earring": [

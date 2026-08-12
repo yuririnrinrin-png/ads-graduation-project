@@ -161,7 +161,7 @@ export type Anchor = { x: number; y: number; scale: number };
  * Anchor points = center of jewelry on canvas (0–1), scale = width vs canvas.
  * Categories with 2 anchors (earring) get the single uploaded/cutout jewel
  * mirrored onto the second anchor — no need to shoot left/right separately
- * (REQUIREMENTS 未決 folder discussion 2026-08-12).
+ * (REQUIREMENTS.md §2 決定 2026-08-12).
  */
 export const CATEGORY_ANCHORS: Record<Category, Anchor[]> = {
   necklace: [{ x: 0.5, y: 0.36, scale: 0.28 }],
