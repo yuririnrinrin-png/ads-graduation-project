@@ -155,23 +155,33 @@ export const DEFAULT_TRANSFORM: SlotTransform = {
   offsetY: 0,
 };
 
-/** Anchor = center of jewelry on canvas (0–1), scale = width vs canvas. */
-export const CATEGORY_ANCHORS: Record<
-  Category,
-  { x: number; y: number; scale: number }
-> = {
-  necklace: { x: 0.5, y: 0.36, scale: 0.28 },
-  earring: { x: 0.63, y: 0.3, scale: 0.1 },
-  ring: { x: 0.58, y: 0.66, scale: 0.13 },
-  bracelet: { x: 0.46, y: 0.55, scale: 0.2 },
+export type Anchor = { x: number; y: number; scale: number };
+
+/**
+ * Anchor points = center of jewelry on canvas (0–1), scale = width vs canvas.
+ * Categories with 2 anchors (earring) get the single uploaded/cutout jewel
+ * mirrored onto the second anchor — no need to shoot left/right separately
+ * (REQUIREMENTS 未決 folder discussion 2026-08-12).
+ */
+export const CATEGORY_ANCHORS: Record<Category, Anchor[]> = {
+  necklace: [{ x: 0.5, y: 0.36, scale: 0.28 }],
+  earring: [
+    { x: 0.4, y: 0.32, scale: 0.09 },
+    { x: 0.6, y: 0.32, scale: 0.09 },
+  ],
+  ring: [{ x: 0.58, y: 0.66, scale: 0.13 }],
+  bracelet: [{ x: 0.46, y: 0.55, scale: 0.2 }],
 };
 
 /** Full-body frames use a slightly lower / smaller default. */
-export const BODY_ANCHORS: Record<Category, { x: number; y: number; scale: number }> = {
-  necklace: { x: 0.5, y: 0.32, scale: 0.14 },
-  earring: { x: 0.58, y: 0.22, scale: 0.05 },
-  ring: { x: 0.55, y: 0.58, scale: 0.07 },
-  bracelet: { x: 0.48, y: 0.48, scale: 0.1 },
+export const BODY_ANCHORS: Record<Category, Anchor[]> = {
+  necklace: [{ x: 0.5, y: 0.32, scale: 0.14 }],
+  earring: [
+    { x: 0.46, y: 0.22, scale: 0.045 },
+    { x: 0.54, y: 0.22, scale: 0.045 },
+  ],
+  ring: [{ x: 0.55, y: 0.58, scale: 0.07 }],
+  bracelet: [{ x: 0.48, y: 0.48, scale: 0.1 }],
 };
 
 export const WEAR_SLOTS = [
@@ -187,3 +197,20 @@ export const COMPOSITE_SLOTS = [
   "body_2",
   "wide_inset",
 ] as const;
+
+export function isBodySlot(slot: string): boolean {
+  return slot === "body_1" || slot === "body_2" || slot === "wide_inset";
+}
+
+/** Anchor points for a category/frame combo (2 for earrings = left/right ear). */
+export function getAnchors(category: Category, body: boolean): Anchor[] {
+  const table = body ? BODY_ANCHORS : CATEGORY_ANCHORS;
+  return table[category] ?? CATEGORY_ANCHORS.bracelet;
+}
+
+export function defaultTransforms(count: number): SlotTransform[] {
+  return Array.from({ length: count }, () => ({ ...DEFAULT_TRANSFORM }));
+}
+
+/** Logical square canvas size (px) all composited/scene images are rendered at. */
+export const CANVAS_SIZE = 2000;

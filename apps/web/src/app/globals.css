@@ -831,26 +831,48 @@ select {
   box-shadow: var(--shadow-lift);
 }
 
-.adjust-panel {
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  background: var(--stone-light);
+.edit-canvas {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: var(--stone);
+  box-shadow: var(--shadow-lift);
+  border: 2px solid var(--gold);
+  touch-action: none;
+  user-select: none;
 }
 
-.adjust-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--ink-muted);
-  margin-top: 0.35rem;
+.edit-canvas-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
 }
 
-.adjust-row input[type="range"] {
-  flex: 1;
-  max-width: 8rem;
+.edit-jewel {
+  position: absolute;
+  cursor: grab;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+}
+
+.edit-jewel:active {
+  cursor: grabbing;
+}
+
+.edit-resize-handle {
+  position: absolute;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-left: -0.55rem;
+  margin-top: -0.55rem;
+  border-radius: 999px;
+  background: var(--gold);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  cursor: nwse-resize;
 }
 
 /* —— Job list —— */

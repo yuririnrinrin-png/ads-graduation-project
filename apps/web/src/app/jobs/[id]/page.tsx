@@ -4,6 +4,8 @@ import {
   CATEGORY_LABELS,
   COMPOSITE_SLOTS,
   DEFAULT_TRANSFORM,
+  getAnchors,
+  isBodySlot,
   JOB_STATUS_LABELS,
   PIPELINE_STAGE_LABELS,
   PROGRESS_STEPS,
@@ -39,6 +41,16 @@ function asTransform(value: unknown): SlotTransform {
   };
 }
 
+/** One transform per anchor (2 for earrings). Accepts legacy single-object
+ * values too, applying the same transform to every anchor. */
+function asTransformArray(value: unknown, count: number): SlotTransform[] {
+  if (Array.isArray(value)) {
+    return Array.from({ length: count }, (_, i) => asTransform(value[i]));
+  }
+  const single = asTransform(value);
+  return Array.from({ length: count }, () => single);
+}
+
 function ReviewView({
   job,
   transforms,
@@ -50,7 +62,7 @@ function ReviewView({
     category: string;
     metal: string;
   };
-  transforms: Partial<Record<SlotKey, SlotTransform>>;
+  transforms: Partial<Record<SlotKey, SlotTransform[]>>;
 }) {
   const details = SLOT_KEYS.slice(0, 3) as SlotKey[];
   const wears = SLOT_KEYS.slice(3, 7) as SlotKey[];
@@ -101,7 +113,9 @@ function ReviewView({
                 jobId={job.id}
                 slot={slot}
                 adjustable={adjustable.has(slot)}
-                initialTransform={transforms[slot]}
+                initialTransforms={transforms[slot]}
+                category={job.category as Category}
+                body={false}
               />
             ))}
           </div>
@@ -116,7 +130,9 @@ function ReviewView({
                 jobId={job.id}
                 slot={slot}
                 adjustable={adjustable.has(slot)}
-                initialTransform={transforms[slot]}
+                initialTransforms={transforms[slot]}
+                category={job.category as Category}
+                body
               />
             ))}
           </div>
@@ -236,10 +252,12 @@ export default async function JobDetailPage({ params }: Props) {
   if (!job) notFound();
 
   const statusLabel = JOB_STATUS_LABELS[job.status as JobStatus] ?? job.status;
-  const transforms: Partial<Record<SlotKey, SlotTransform>> = {};
+  const transforms: Partial<Record<SlotKey, SlotTransform[]>> = {};
   for (const asset of job.assets) {
     if (asset.kind === "preview" && asset.slotKey) {
-      transforms[asset.slotKey as SlotKey] = asTransform(asset.transform);
+      const slotKey = asset.slotKey as SlotKey;
+      const anchorCount = getAnchors(job.category as Category, isBodySlot(slotKey)).length;
+      transforms[slotKey] = asTransformArray(asset.transform, anchorCount);
     }
   }
 

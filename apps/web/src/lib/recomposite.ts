@@ -1,14 +1,16 @@
 import path from "path";
 import sharp from "sharp";
 import {
-  BODY_ANCHORS,
-  CATEGORY_ANCHORS,
+  CANVAS_SIZE,
   DEFAULT_TRANSFORM,
+  getAnchors,
   type Category,
   type SlotTransform,
 } from "@ti-amo/shared";
 
-const SIZE = 2000;
+export { isBodySlot } from "@ti-amo/shared";
+
+const SIZE = CANVAS_SIZE;
 
 const METAL_MODULATION: Record<string, { brightness: number; saturation: number; hue: number }> = {
   YG: { brightness: 1.05, saturation: 1.15, hue: 15 },
@@ -23,37 +25,46 @@ export async function recompositeSlot(opts: {
   category: Category;
   metal: string;
   body: boolean;
-  transform?: SlotTransform;
+  /** One transform per anchor (2 for earrings = independent left/right). */
+  transforms?: SlotTransform[];
   /** Optional detail image for wide_inset corner. */
   insetPath?: string;
 }): Promise<void> {
-  const t = opts.transform ?? DEFAULT_TRANSFORM;
-  const anchors = opts.body ? BODY_ANCHORS : CATEGORY_ANCHORS;
-  const anchor = anchors[opts.category] ?? CATEGORY_ANCHORS.bracelet;
-  const jewelW = Math.max(32, Math.round(SIZE * anchor.scale * t.scale));
+  const anchors = getAnchors(opts.category, opts.body);
 
-  let cutout = sharp(opts.cutoutPath).ensureAlpha();
+  let cutoutSharp = sharp(opts.cutoutPath).ensureAlpha();
   const mod = METAL_MODULATION[opts.metal];
   if (mod) {
-    cutout = cutout.modulate(mod);
+    cutoutSharp = cutoutSharp.modulate(mod);
   }
-  const jewelBuf = await cutout
-    .resize(jewelW, jewelW, { fit: "inside" })
-    .png()
-    .toBuffer();
-  const jewelMeta = await sharp(jewelBuf).metadata();
-  const jw = jewelMeta.width ?? jewelW;
-  const jh = jewelMeta.height ?? jewelW;
-  const cx = Math.round(SIZE * anchor.x + t.offsetX);
-  const cy = Math.round(SIZE * anchor.y + t.offsetY);
-  const left = cx - Math.floor(jw / 2);
-  const top = cy - Math.floor(jh / 2);
+  const baseCutoutBuf = await cutoutSharp.png().toBuffer();
 
-  let base = sharp(opts.scenePath).resize(SIZE, SIZE).ensureAlpha();
+  const composites: sharp.OverlayOptions[] = [];
 
-  const composites: sharp.OverlayOptions[] = [
-    { input: jewelBuf, left: Math.max(0, left), top: Math.max(0, top) },
-  ];
+  // Two anchors (earrings) = same jewel mirrored onto both ears; each anchor
+  // keeps its own transform so left/right can be sized/placed independently.
+  for (let i = 0; i < anchors.length; i++) {
+    const anchor = anchors[i];
+    const t = opts.transforms?.[i] ?? DEFAULT_TRANSFORM;
+    const jewelW = Math.max(24, Math.round(SIZE * anchor.scale * t.scale));
+    let jewelPipeline = sharp(baseCutoutBuf).resize(jewelW, jewelW, { fit: "inside" });
+    if (i % 2 === 1) {
+      jewelPipeline = jewelPipeline.flop();
+    }
+    const jewelBuf = await jewelPipeline.png().toBuffer();
+    const meta = await sharp(jewelBuf).metadata();
+    const jw = meta.width ?? jewelW;
+    const jh = meta.height ?? jewelW;
+    const cx = Math.round(SIZE * anchor.x + t.offsetX);
+    const cy = Math.round(SIZE * anchor.y + t.offsetY);
+    composites.push({
+      input: jewelBuf,
+      left: Math.max(0, cx - Math.floor(jw / 2)),
+      top: Math.max(0, cy - Math.floor(jh / 2)),
+    });
+  }
+
+  const base = sharp(opts.scenePath).resize(SIZE, SIZE).ensureAlpha();
 
   if (opts.insetPath) {
     const insetSize = 520;
@@ -88,10 +99,6 @@ export async function recompositeSlot(opts: {
     .flatten({ background: "#ffffff" })
     .jpeg({ quality: 90 })
     .toFile(opts.outPath);
-}
-
-export function isBodySlot(slot: string) {
-  return slot === "body_1" || slot === "body_2" || slot === "wide_inset";
 }
 
 export function previewPath(jobRoot: string, filename: string) {

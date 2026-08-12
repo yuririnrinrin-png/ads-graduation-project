@@ -3,7 +3,9 @@ import { z } from "zod";
 import path from "path";
 import {
   COMPOSITE_SLOTS,
-  DEFAULT_TRANSFORM,
+  defaultTransforms,
+  getAnchors,
+  isBodySlot,
   ZIP_FILENAMES,
   type Category,
   type SlotKey,
@@ -11,14 +13,18 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { jobDir } from "@/lib/queue";
-import { isBodySlot, recompositeSlot } from "@/lib/recomposite";
+import { recompositeSlot } from "@/lib/recomposite";
 
 type Ctx = { params: Promise<{ id: string; slot: string }> };
 
-const bodySchema = z.object({
+const transformItemSchema = z.object({
   scale: z.number().min(0.3).max(2.5),
   offsetX: z.number().min(-600).max(600),
   offsetY: z.number().min(-600).max(600),
+});
+
+const bodySchema = z.object({
+  transforms: z.array(transformItemSchema).min(1).max(2),
 });
 
 export async function PATCH(req: Request, ctx: Ctx) {
@@ -40,12 +46,21 @@ export async function PATCH(req: Request, ctx: Ctx) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Validation failed" }, { status: 400 });
   }
-  const transform = parsed.data;
 
   const job = await prisma.job.findUnique({ where: { id } });
   if (!job || job.status !== "ready") {
     return NextResponse.json({ error: "Job not ready" }, { status: 400 });
   }
+
+  const body = isBodySlot(slot);
+  const anchors = getAnchors(job.category as Category, body);
+  if (parsed.data.transforms.length !== anchors.length) {
+    return NextResponse.json(
+      { error: `Expected ${anchors.length} transform(s) for this slot` },
+      { status: 400 }
+    );
+  }
+  const transforms = parsed.data.transforms;
 
   const scene = await prisma.jobAsset.findFirst({
     where: { jobId: id, slotKey: slot, kind: "scene" },
@@ -78,8 +93,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
       outPath,
       category: job.category as Category,
       metal: job.metal,
-      body: isBodySlot(slot),
-      transform,
+      body,
+      transforms,
       insetPath,
     });
   } catch (e) {
@@ -91,9 +106,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
     where: { id: preview.id },
     data: {
       storageKey: outPath,
-      transform: transform ?? DEFAULT_TRANSFORM,
+      transform: transforms ?? defaultTransforms(anchors.length),
     },
   });
 
-  return NextResponse.json({ ok: true, transform: updated.transform });
+  return NextResponse.json({ ok: true, transforms: updated.transform });
 }

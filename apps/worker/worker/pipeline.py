@@ -47,17 +47,25 @@ BG_BY_NAME = {
     "黒石": "black_stone",
 }
 
+# Anchor lists: earrings get 2 anchors (single cutout mirrored onto both ears —
+# no separate left/right shoot needed, REQUIREMENTS 未決 2026-08-12).
 CATEGORY_ANCHORS = {
-    "necklace": {"x": 0.5, "y": 0.36, "scale": 0.28},
-    "earring": {"x": 0.63, "y": 0.3, "scale": 0.1},
-    "ring": {"x": 0.58, "y": 0.66, "scale": 0.13},
-    "bracelet": {"x": 0.46, "y": 0.55, "scale": 0.2},
+    "necklace": [{"x": 0.5, "y": 0.36, "scale": 0.28}],
+    "earring": [
+        {"x": 0.4, "y": 0.32, "scale": 0.09},
+        {"x": 0.6, "y": 0.32, "scale": 0.09},
+    ],
+    "ring": [{"x": 0.58, "y": 0.66, "scale": 0.13}],
+    "bracelet": [{"x": 0.46, "y": 0.55, "scale": 0.2}],
 }
 BODY_ANCHORS = {
-    "necklace": {"x": 0.5, "y": 0.32, "scale": 0.14},
-    "earring": {"x": 0.58, "y": 0.22, "scale": 0.05},
-    "ring": {"x": 0.55, "y": 0.58, "scale": 0.07},
-    "bracelet": {"x": 0.48, "y": 0.48, "scale": 0.1},
+    "necklace": [{"x": 0.5, "y": 0.32, "scale": 0.14}],
+    "earring": [
+        {"x": 0.46, "y": 0.22, "scale": 0.045},
+        {"x": 0.54, "y": 0.22, "scale": 0.045},
+    ],
+    "ring": [{"x": 0.55, "y": 0.58, "scale": 0.07}],
+    "bracelet": [{"x": 0.48, "y": 0.48, "scale": 0.1}],
 }
 
 SLOT_DETAIL = ["detail_a", "detail_b", "detail_c"]
@@ -330,6 +338,15 @@ def default_transform() -> dict:
     return {"scale": 1.0, "offsetX": 0, "offsetY": 0}
 
 
+def default_transforms(count: int) -> list[dict]:
+    return [default_transform() for _ in range(count)]
+
+
+def get_anchors(category: str, body: bool) -> list[dict]:
+    anchors_by_category = BODY_ANCHORS if body else CATEGORY_ANCHORS
+    return anchors_by_category.get(category, CATEGORY_ANCHORS["bracelet"])
+
+
 def composite_on_scene(
     scene: Image.Image,
     cutout: Image.Image,
@@ -337,20 +354,26 @@ def composite_on_scene(
     metal: str,
     *,
     body: bool,
-    transform: dict | None = None,
+    transforms: list[dict] | None = None,
 ) -> Image.Image:
-    t = transform or default_transform()
-    anchors = BODY_ANCHORS if body else CATEGORY_ANCHORS
-    anchor = anchors.get(category, CATEGORY_ANCHORS["bracelet"])
+    anchors = get_anchors(category, body)
+    ts = transforms if transforms is not None else default_transforms(len(anchors))
     tinted = apply_metal_tint(cutout, metal)
-    jewel_w = max(32, int(SIZE * anchor["scale"] * float(t.get("scale", 1))))
-    fitted = ImageOps.contain(tinted, (jewel_w, jewel_w))
-    cx = int(SIZE * anchor["x"] + float(t.get("offsetX", 0)))
-    cy = int(SIZE * anchor["y"] + float(t.get("offsetY", 0)))
-    x = cx - fitted.width // 2
-    y = cy - fitted.height // 2
     canvas = scene.convert("RGBA")
-    canvas.alpha_composite(fitted, (x, y))
+
+    # Earrings: same cutout mirrored onto both ear anchors, each with its own
+    # transform so left/right can be sized/placed independently.
+    for i, anchor in enumerate(anchors):
+        t = ts[i] if i < len(ts) else default_transform()
+        jewel_w = max(24, int(SIZE * anchor["scale"] * float(t.get("scale", 1))))
+        fitted = ImageOps.contain(tinted, (jewel_w, jewel_w))
+        if i % 2 == 1:
+            fitted = ImageOps.mirror(fitted)
+        cx = int(SIZE * anchor["x"] + float(t.get("offsetX", 0)))
+        cy = int(SIZE * anchor["y"] + float(t.get("offsetY", 0)))
+        x = cx - fitted.width // 2
+        y = cy - fitted.height // 2
+        canvas.alpha_composite(fitted, (x, y))
     return canvas.convert("RGB")
 
 
@@ -435,25 +458,26 @@ def run_job(conn, job_id: str) -> None:
 
     # --- composite ---
     set_stage(conn, job_id, "composite", "running")
-    transform = default_transform()
+    wear_transforms = default_transforms(len(get_anchors(job["category"], False)))
+    body_transforms = default_transforms(len(get_anchors(job["category"], True)))
     composited: dict[str, Image.Image] = {}
     for slot in WEAR_SLOTS:
         img = composite_on_scene(
-            scenes[slot], main_cut, job["category"], job["metal"], body=False, transform=transform
+            scenes[slot], main_cut, job["category"], job["metal"], body=False, transforms=wear_transforms
         )
         out = preview_dir / ZIP_NAME[slot]
         img.save(out, "JPEG", quality=90)
-        upsert_asset(conn, job_id, slot, "preview", str(out), transform=transform)
+        upsert_asset(conn, job_id, slot, "preview", str(out), transform=wear_transforms)
         composited[slot] = img
         logger.info("job_id=%s stage=composite slot=%s", job_id, slot)
 
     for slot in BODY_SLOTS:
         img = composite_on_scene(
-            scenes[slot], main_cut, job["category"], job["metal"], body=True, transform=transform
+            scenes[slot], main_cut, job["category"], job["metal"], body=True, transforms=body_transforms
         )
         out = preview_dir / ZIP_NAME[slot]
         img.save(out, "JPEG", quality=90)
-        upsert_asset(conn, job_id, slot, "preview", str(out), transform=transform)
+        upsert_asset(conn, job_id, slot, "preview", str(out), transform=body_transforms)
         composited[slot] = img
         logger.info("job_id=%s stage=composite slot=%s", job_id, slot)
 
@@ -464,7 +488,7 @@ def run_job(conn, job_id: str) -> None:
         job["category"],
         job["metal"],
         body=True,
-        transform=transform,
+        transforms=body_transforms,
     )
 
     # --- inset ---
@@ -472,7 +496,7 @@ def run_job(conn, job_id: str) -> None:
     wide_final = add_inset(wide, detail_imgs[0])
     out = preview_dir / ZIP_NAME["wide_inset"]
     wide_final.save(out, "JPEG", quality=90)
-    upsert_asset(conn, job_id, "wide_inset", "preview", str(out), transform=transform)
+    upsert_asset(conn, job_id, "wide_inset", "preview", str(out), transform=body_transforms)
     logger.info("job_id=%s stage=inset slot=wide_inset", job_id)
 
     set_stage(conn, job_id, "ready", "ready", error=None)

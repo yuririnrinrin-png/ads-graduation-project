@@ -33,7 +33,10 @@ python -m worker.pipeline run <jobId>
 |---|---|
 | cutout / detail | 淡色背景マット＋背景・地金（Phase 2） |
 | scene | 人物シーン7枚（いまは同一 persona のローカル仮生成。FAL 等は未決差し替え） |
-| composite | メイン切り抜きをカテゴリ別アンカーに合成。transform 保存 |
+| composite | メイン切り抜きをカテゴリ別アンカーに合成。アンカーごとに transform を保存 |
 | inset | 引きにディテールAを右下インセット |
 
-レビュー画面の大きさ・位置変更は Web（sharp）が scene＋cutout から再合成します。
+- アンカーはカテゴリごとに1〜2点（ピアスのみ左右2点）。ピアスは1個の切り抜きを
+  鏡写しして両耳に合成し、`transform` はアンカー数と同じ長さの配列で保存する
+  （左右を個別に調整できるように）
+- レビュー画面の大きさ・位置変更は Web（sharp）が scene＋cutout から再合成します。
