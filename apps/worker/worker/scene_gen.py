@@ -39,7 +39,7 @@ PERSONA_LOOK = {
     ),
     "Elena": (
         "Italian woman in her early 30s, fair skin with light freckles, "
-        "hazel eyes, elegant quiet expression"
+        "hazel eyes, refined features, natural makeup"
     ),
     "Mia": (
         "young Italian woman about 25, light tan skin, dark eyes, fresh minimal makeup"
@@ -75,11 +75,10 @@ WEAR_SETTING = {
         "lights softly blurred behind her, sunlit afternoon"
     ),
     "wear_date": (
-        "sitting in a fine-dining restaurant booth across from a man in a dark "
-        "suit — his face out of focus or turned away so attention stays on her, "
-        "only his blurred silhouette and perhaps his hand near hers on the table "
-        "visible, a lit candle and two wine glasses between them, strings of warm "
-        "bokeh lights blurred in the background, romantic evening mood"
+        "TWO PEOPLE in frame: she is in the foreground at a fine-dining booth; "
+        "across the table a man in a dark suit is seen from behind, out of focus, "
+        "only his blurred back and one hand near hers on the table. A lit candle "
+        "and two wine glasses between them, warm bokeh lights, romantic evening"
     ),
     "wear_holiday": (
         "sitting on a wooden beach pier railing, ocean waves and palm leaves "
@@ -130,36 +129,34 @@ TONE_SETTING = {
 # entry spells out an explicit angle and a distinctly different emotion.
 POSE_VARIATION = {
     "wear_office": (
-        "head turned about 30 degrees to her left in a three-quarter angle, "
-        "chin slightly lifted, sharp confident closed-mouth smile, eyes locked "
-        "on camera, shoulders squared, upright poised posture"
+        "body turned 45 degrees left, face in a clear three-quarter view "
+        "(not frontal), chin slightly lifted, sharp confident closed-mouth smile, "
+        "eyes toward camera, shoulders angled, upright posture"
     ),
     "wear_cafe": (
-        "head tilted gently to one side in a soft side profile, warm open "
-        "smile clearly showing her teeth as if laughing at something someone "
-        "said, eyes crinkled with genuine warmth"
+        "body angled to her right, head tilted, warm laugh with teeth clearly "
+        "showing, eyes crinkled, three-quarter face (not a straight-on headshot)"
     ),
     "wear_date": (
-        "looking back over her shoulder toward the camera in a near-profile "
-        "pose (body facing away, face turned back), soft sultry half-lidded "
-        "gaze with a closed-mouth smirk"
+        "body facing the man across the table (away from camera), she looks back "
+        "over her left shoulder toward the lens in near-profile, soft closed-mouth smirk"
     ),
     "wear_holiday": (
-        "head thrown back slightly in genuine joyful laughter with teeth "
-        "showing and eyes softly closed, face angled about 20 degrees upward "
-        "and to the side"
+        "head thrown back in genuine laughter, teeth showing, eyes softly closed, "
+        "face angled 25 degrees up and to the side, relaxed open shoulders"
     ),
     "body_1": (
-        "strong side profile with her head turned almost fully to face left, "
-        "serene composed closed-mouth smile, one hand resting lightly on her hip"
+        "STRICT SIDE PROFILE: we see only one eye, her ear, and the side of her "
+        "nose — her face is NOT turned toward the camera. Serene closed-mouth "
+        "smile, one hand on her hip"
     ),
     "body_2": (
-        "big candid grin showing teeth, head tilted playfully to one side "
-        "in a three-quarter angle, bright eyes looking straight at camera"
+        "body three-quarter to the right, big candid grin showing teeth, "
+        "head tilted playfully, bright eyes on camera"
     ),
     "wide_inset": (
-        "calm gentle closed-mouth smile with a soft downward gaze away from "
-        "camera in a three-quarter turned pose"
+        "three-quarter turned body, calm closed-mouth smile, gaze looking down "
+        "and away from the camera (not making eye contact)"
     ),
 }
 
@@ -170,8 +167,8 @@ POSE_VARIATION = {
 HAIR_STYLE = {
     "wear_office": (
         "up",
-        "fully swept up and back into a sleek low bun, every strand pulled "
-        "cleanly away from her neck — NOT flowing, NOT loose",
+        "in a sleek low bun with every strand pulled off her neck and shoulders, "
+        "nape fully exposed",
     ),
     "wear_cafe": (
         "down",
@@ -180,8 +177,8 @@ HAIR_STYLE = {
     ),
     "wear_date": (
         "up",
-        "swept up into a high sleek ponytail gathered at the crown, smooth "
-        "against her head — NOT flowing, NOT loose",
+        "in a high sleek ponytail at the crown, nape and ears fully visible, "
+        "no hair on her shoulders",
     ),
     "wear_holiday": (
         "down",
@@ -190,8 +187,8 @@ HAIR_STYLE = {
     ),
     "body_1": (
         "up",
-        "swept back into a smooth low chignon at the nape of her neck, sleek "
-        "and fully gathered — NOT flowing, NOT loose",
+        "in a smooth low chignon at the nape, sleek and fully gathered, "
+        "no loose hair on her shoulders",
     ),
     "body_2": (
         "down",
@@ -206,10 +203,45 @@ HAIR_STYLE = {
 }
 
 HAIR_NEGATIVE_BY_STATE = {
-    "up": "hair down, loose hair, flowing hair, hair falling over shoulders",
+    "up": "hair down, loose hair, flowing hair, hair falling over shoulders, "
+    "hair over the ears, long hair down",
     "down": "hair up, ponytail, bun, chignon, braid, plait, hair tie, updo, "
     "hair pinned up, hair pulled back",
     "half": "hair fully up, hair fully down, ponytail, bun, braid, plait",
+}
+
+# Extra "don't copy the ID photo" negatives per slot. The reference portrait is
+# always front-facing / hair-down / neutral, so each shot forbids that default
+# plus the opposite of its intended hair/pose.
+SLOT_NEGATIVE_EXTRA = {
+    "wear_office": (
+        "frontal face, straight-on headshot, passport photo, hair down, "
+        "laughing, open mouth, looking fully sideways"
+    ),
+    "wear_cafe": (
+        "frontal face, passport photo, hair up, bun, ponytail, "
+        "serious closed mouth, frowning, expressionless"
+    ),
+    "wear_date": (
+        "alone, solo portrait, empty table, no other person, hair down, "
+        "frontal face, looking straight at camera, laughing with mouth wide open"
+    ),
+    "wear_holiday": (
+        "hair up, bun, ponytail, serious face, frowning, closed mouth, "
+        "frontal passport photo"
+    ),
+    "body_1": (
+        "frontal face, looking at camera, hair down, laughing, open mouth, "
+        "tight headshot"
+    ),
+    "body_2": (
+        "hair up, bun, ponytail, serious closed mouth, frowning, "
+        "full side profile, tight headshot"
+    ),
+    "wide_inset": (
+        "looking straight at camera, big grin, hair fully up, hair fully down, "
+        "tight headshot"
+    ),
 }
 
 # What body region the wear shot must expose for later jewelry composite.
@@ -292,12 +324,22 @@ def hair_state(slot: str) -> str:
     return HAIR_STYLE.get(slot, ("down", ""))[0]
 
 
+def slot_id_weight(slot: str, mode: str) -> float:
+    """Hair-up / profile shots fight the ID photo hardest, so loosen the lock."""
+    state = hair_state(slot)
+    if slot in ("wear_office", "wear_date", "body_1"):
+        return 0.48
+    if state == "half":
+        return 0.52
+    return 0.55 if mode == "full" else 0.62
+
+
 def slot_negative_prompt(slot: str, mode: str) -> str:
     base = NEGATIVE_FULL_BODY if mode == "full" else NEGATIVE
-    hair_neg = HAIR_NEGATIVE_BY_STATE.get(hair_state(slot))
-    if hair_neg:
-        return f"{base}, {hair_neg}"
-    return base
+    extras = [HAIR_NEGATIVE_BY_STATE.get(hair_state(slot), "")]
+    extras.append(SLOT_NEGATIVE_EXTRA.get(slot, ""))
+    extra = ", ".join(e for e in extras if e)
+    return f"{base}, {extra}" if extra else base
 
 
 def build_scene_prompt(
@@ -312,22 +354,43 @@ def build_scene_prompt(
     framing = category_framing(category)
 
     pose = POSE_VARIATION.get(slot, "natural relaxed expression and pose")
-    _, hair_style = HAIR_STYLE.get(slot, ("down", "worn naturally"))
-    # Hair goes right after the subject, before fashion/setting, so it isn't
-    # drowned out — prompt position matters for how strongly it's honored.
-    # (Do not also repeat/shout this elsewhere in the prompt: doing so in an
-    # earlier pass made the model zoom in tight on the face/hair and broke
-    # the fixed-anchor neck framing — see docs/HANDOFF.md.)
-    hair_line = f"Hairstyle: her {hair_color} is {hair_style}."
+    state, hair_style = HAIR_STYLE.get(slot, ("down", "worn naturally"))
+    # Pose + hair MUST lead the prompt. fal-ai/flux-pulid defaults
+    # max_sequence_length=128, which silently dropped the old tail (pose lived
+    # after fashion/setting). We now request 512 tokens AND put the variety
+    # first so PuLID cannot copy the ID photo's front-facing hair-down look.
+    if state == "up":
+        hair_line = (
+            f"CRITICAL HAIRSTYLE: hair is UP in a bun or ponytail. "
+            f"The nape of her neck is fully exposed. Zero hair on her shoulders. "
+            f"Her {hair_color} is {hair_style}."
+        )
+        lead = f"{hair_line} Pose and expression: {pose}."
+    elif state == "half":
+        hair_line = (
+            f"Hairstyle is HALF-UP: the top is gathered, the rest still falls. "
+            f"Her {hair_color} is {hair_style}."
+        )
+        lead = f"Pose and expression (must differ from a passport photo): {pose}. {hair_line}"
+    else:
+        hair_line = f"Hairstyle: her {hair_color} is {hair_style}."
+        lead = f"Pose and expression (must differ from a passport photo): {pose}. {hair_line}"
 
     if meta["mode"] == "bust":
         setting = WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
         fashion = WEAR_FASHION.get(slot, "wearing a stylish coordinated outfit")
+        companion = ""
+        if slot == "wear_date":
+            companion = (
+                "A second person is visible: a man in a dark suit seen from behind, "
+                "out of focus, only his blurred back and a hand on the table. "
+            )
         return (
+            f"{lead} {companion}"
             f"Photorealistic commercial jewelry catalog photo of {look}. "
-            f"{hair_line} {fashion}. "
-            f"{framing}. Setting: {setting}. Expression and pose: {pose}. "
-            "Same woman, editorial fashion lighting, square 1:1 crop. "
+            f"{fashion}. {framing}. Setting: {setting}. "
+            "Same woman as the identity reference, but do NOT copy that photo's "
+            "front-facing pose, neutral face, or hair-down styling. "
             "Absolutely no jewelry on the model — bare skin where jewelry would sit. "
             "No text, no watermark."
         )
@@ -338,13 +401,13 @@ def build_scene_prompt(
     else:
         setting = f"standing in a softly lit lifestyle interior, {tone_bit}"
     return (
+        f"{lead} "
         f"Three-quarter length fashion photograph of {look}. "
-        f"{hair_line} Standing, camera framing from the top of her head down "
+        f"Standing, camera framing from the top of her head down "
         f"to at least mid-thigh so her full coordinated outfit and styling are "
         f"clearly visible. {setting}. "
-        f"Expression and pose: {pose}. "
-        "Same woman, soft daylight, editorial fashion photography, outfit and "
-        "silhouette clearly readable. "
+        "Same woman as the identity reference, but do NOT copy that photo's "
+        "front-facing pose, neutral face, or hair-down styling. "
         "Bare of jewelry (no necklace, earrings, rings, or bracelets). "
         "Square 1:1 crop, no text, no watermark."
     )
@@ -426,15 +489,15 @@ def generate_scene_fal(
     reference_image_url: str,
     *,
     mode: str = "bust",
+    slot: str | None = None,
     negative_prompt: str | None = None,
     on_api_call: Callable[[], None] | None = None,
 ) -> Image.Image:
-    # PuLID's default id_weight=1 biases hard toward copying the reference
-    # portrait's expression/pose/hairstyle/crop almost exactly. Lower it a bit
-    # for every slot so those can vary shot to shot while identity stays
-    # recognizable; full-body slots need even more room to compose.
+    # PuLID's default id_weight=1 copies the reference portrait's
+    # expression/pose/hairstyle. Hair-up and profile shots need a looser lock.
     is_full = mode == "full"
     negative = negative_prompt or (NEGATIVE_FULL_BODY if is_full else NEGATIVE)
+    id_w = slot_id_weight(slot, mode) if slot else (0.55 if is_full else 0.62)
     result = _fal_subscribe(
         "fal-ai/flux-pulid",
         {
@@ -442,16 +505,15 @@ def generate_scene_fal(
             "reference_image_url": reference_image_url,
             "image_size": {"width": FAL_GEN_SIZE, "height": FAL_GEN_SIZE},
             "num_inference_steps": 24,
-            # NOTE: pushing guidance_scale up / id_weight down further (tried
-            # 5.0-5.5 / 0.5-0.6 in an earlier pass) made the model crop in
-            # much tighter on the face, breaking the fixed-anchor jewelry
-            # placement (necklace landed on the nose/mouth instead of the
-            # neck) — see docs/HANDOFF.md. Keep these at the values that were
-            # confirmed to frame correctly; fix hairstyle/pose adherence via
-            # prompt wording instead of these knobs.
+            # Face-based jewelry placement now exists (face_anchor.py), so a
+            # slightly looser ID lock is safe. The bigger fix is
+            # max_sequence_length=512: the default 128 was truncating pose/hair
+            # off the end of the prompt, so every shot copied the ID photo.
             "guidance_scale": 4.5 if is_full else 4.2,
+            "true_cfg": 1.8,
+            "max_sequence_length": "512",
             "negative_prompt": negative,
-            "id_weight": 0.65 if is_full else 0.75,
+            "id_weight": id_w,
             "enable_safety_checker": True,
         },
     )
@@ -549,11 +611,12 @@ def generate_all_scenes(
         prompt = build_scene_prompt(persona_name, slot, category, tone_label)
         mode = SCENE_META[slot]["mode"]
         negative = slot_negative_prompt(slot, mode)
-        logger.info("scene fal slot=%s mode=%s prompt_len=%s", slot, mode, len(prompt))
+        logger.info("scene fal slot=%s mode=%s id_weight=%s prompt_len=%s", slot, mode, slot_id_weight(slot, mode), len(prompt))
         scenes[slot] = generate_scene_fal(
             prompt,
             ref_url,
             mode=mode,
+            slot=slot,
             negative_prompt=negative,
             on_api_call=on_api_call,
         )

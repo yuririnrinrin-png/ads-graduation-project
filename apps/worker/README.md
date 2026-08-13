@@ -33,7 +33,7 @@ python -m worker.pipeline run <jobId>
 |---|---|
 | cutout / detail | 淡色背景マット＋背景・地金（Phase 2） |
 | scene | 人物シーン7枚。`FAL_KEY` あり → Flux で参照顔＋PuLID で同一人物7枚。なし → ローカル仮 |
-| composite | メイン切り抜きをカテゴリ別アンカーに合成。アンカーごとに transform を保存 |
+| composite | メイン切り抜きをカテゴリ別アンカーに合成。ネックレス／ピアスは顔の位置で初期 transform を枠ごとに保存 |
 | inset | 引きにディテールAを右下インセット |
 
 - アンカーはカテゴリごとに1〜2点（ピアスのみ左右2点）。ピアスは1個の切り抜きを

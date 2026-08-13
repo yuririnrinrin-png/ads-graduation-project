@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from redis import Redis
 
+from worker.face_anchor import transforms_from_face
 from worker.scene_gen import generate_all_scenes
 
 logging.basicConfig(
@@ -464,37 +465,44 @@ def run_job(conn, job_id: str) -> None:
 
     # --- composite ---
     set_stage(conn, job_id, "composite", "running")
-    wear_transforms = default_transforms(len(get_anchors(job["category"], False)))
-    body_transforms = default_transforms(len(get_anchors(job["category"], True)))
     composited: dict[str, Image.Image] = {}
     for slot in WEAR_SLOTS:
+        wear_ts = transforms_from_face(
+            scenes[slot], get_anchors(job["category"], False), job["category"]
+        )
         img = composite_on_scene(
-            scenes[slot], main_cut, job["category"], job["metal"], body=False, transforms=wear_transforms
+            scenes[slot], main_cut, job["category"], job["metal"], body=False, transforms=wear_ts
         )
         out = preview_dir / ZIP_NAME[slot]
         img.save(out, "JPEG", quality=90)
-        upsert_asset(conn, job_id, slot, "preview", str(out), transform=wear_transforms)
+        upsert_asset(conn, job_id, slot, "preview", str(out), transform=wear_ts)
         composited[slot] = img
-        logger.info("job_id=%s stage=composite slot=%s", job_id, slot)
+        logger.info("job_id=%s stage=composite slot=%s transform=%s", job_id, slot, wear_ts)
 
     for slot in BODY_SLOTS:
+        body_ts = transforms_from_face(
+            scenes[slot], get_anchors(job["category"], True), job["category"]
+        )
         img = composite_on_scene(
-            scenes[slot], main_cut, job["category"], job["metal"], body=True, transforms=body_transforms
+            scenes[slot], main_cut, job["category"], job["metal"], body=True, transforms=body_ts
         )
         out = preview_dir / ZIP_NAME[slot]
         img.save(out, "JPEG", quality=90)
-        upsert_asset(conn, job_id, slot, "preview", str(out), transform=body_transforms)
+        upsert_asset(conn, job_id, slot, "preview", str(out), transform=body_ts)
         composited[slot] = img
-        logger.info("job_id=%s stage=composite slot=%s", job_id, slot)
+        logger.info("job_id=%s stage=composite slot=%s transform=%s", job_id, slot, body_ts)
 
     # wide without inset first
+    wide_ts = transforms_from_face(
+        scenes["wide_inset"], get_anchors(job["category"], True), job["category"]
+    )
     wide = composite_on_scene(
         scenes["wide_inset"],
         main_cut,
         job["category"],
         job["metal"],
         body=True,
-        transforms=body_transforms,
+        transforms=wide_ts,
     )
 
     # --- inset ---
@@ -502,8 +510,8 @@ def run_job(conn, job_id: str) -> None:
     wide_final = add_inset(wide, detail_imgs[0])
     out = preview_dir / ZIP_NAME["wide_inset"]
     wide_final.save(out, "JPEG", quality=90)
-    upsert_asset(conn, job_id, "wide_inset", "preview", str(out), transform=body_transforms)
-    logger.info("job_id=%s stage=inset slot=wide_inset", job_id)
+    upsert_asset(conn, job_id, "wide_inset", "preview", str(out), transform=wide_ts)
+    logger.info("job_id=%s stage=inset slot=wide_inset transform=%s", job_id, wide_ts)
 
     set_stage(conn, job_id, "ready", "ready", error=None)
     logger.info("job_id=%s ready in %.1fs", job_id, time.time() - t0)

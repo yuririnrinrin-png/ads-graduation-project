@@ -2,6 +2,7 @@ rq==1.16.2
 redis==5.2.1
 pillow==11.1.0
 numpy==2.2.3
+opencv-python-headless==5.0.0.93
 psycopg[binary]==3.2.5
 boto3==1.37.12
 python-dotenv==1.0.1

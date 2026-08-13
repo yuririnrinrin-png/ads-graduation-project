@@ -156,6 +156,14 @@ export const DEFAULT_TRANSFORM: SlotTransform = {
 };
 
 /**
+ * Max |offsetX/Y| in canvas pixels. Face-based auto placement on a tight
+ * bust crop can need ~700px of shift from CATEGORY_ANCHORS; keep headroom
+ * so the user can still drag after that. Must match
+ * apps/worker/worker/face_anchor.py OFFSET_LIMIT.
+ */
+export const TRANSFORM_OFFSET_LIMIT = 1000;
+
+/**
  * `rotate` (degrees, clockwise) is an optional fixed baseline tilt applied at
  * composite time — NOT a per-shot 3D perspective correction, and not
  * user-adjustable via drag (REQUIREMENTS.md §5/§8 still rule out real

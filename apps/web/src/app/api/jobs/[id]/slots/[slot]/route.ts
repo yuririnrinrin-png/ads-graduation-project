@@ -3,6 +3,7 @@ import { z } from "zod";
 import path from "path";
 import {
   COMPOSITE_SLOTS,
+  TRANSFORM_OFFSET_LIMIT,
   defaultTransforms,
   getAnchors,
   isBodySlot,
@@ -19,8 +20,8 @@ type Ctx = { params: Promise<{ id: string; slot: string }> };
 
 const transformItemSchema = z.object({
   scale: z.number().min(0.3).max(2.5),
-  offsetX: z.number().min(-600).max(600),
-  offsetY: z.number().min(-600).max(600),
+  offsetX: z.number().min(-TRANSFORM_OFFSET_LIMIT).max(TRANSFORM_OFFSET_LIMIT),
+  offsetY: z.number().min(-TRANSFORM_OFFSET_LIMIT).max(TRANSFORM_OFFSET_LIMIT),
 });
 
 const bodySchema = z.object({

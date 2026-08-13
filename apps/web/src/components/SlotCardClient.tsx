@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   CANVAS_SIZE,
   DEFAULT_TRANSFORM,
+  TRANSFORM_OFFSET_LIMIT,
   getAnchors,
   SLOT_BADGES,
   SLOT_LABELS,
@@ -26,7 +27,7 @@ type Props = {
 
 const MIN_SCALE = 0.4;
 const MAX_SCALE = 2.2;
-const MAX_OFFSET = 550;
+const MAX_OFFSET = TRANSFORM_OFFSET_LIMIT;
 
 function clampTransform(t: SlotTransform): SlotTransform {
   return {
