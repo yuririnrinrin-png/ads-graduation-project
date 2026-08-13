@@ -5,3 +5,4 @@ numpy==2.2.3
 psycopg[binary]==3.2.5
 boto3==1.37.12
 python-dotenv==1.0.1
+fal-client==0.5.9

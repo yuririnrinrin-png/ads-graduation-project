@@ -32,7 +32,7 @@ python -m worker.pipeline run <jobId>
 | 段階 | 内容 |
 |---|---|
 | cutout / detail | 淡色背景マット＋背景・地金（Phase 2） |
-| scene | 人物シーン7枚（いまは同一 persona のローカル仮生成。FAL 等は未決差し替え） |
+| scene | 人物シーン7枚。`FAL_KEY` あり → Flux で参照顔＋PuLID で同一人物7枚。なし → ローカル仮 |
 | composite | メイン切り抜きをカテゴリ別アンカーに合成。アンカーごとに transform を保存 |
 | inset | 引きにディテールAを右下インセット |
 
@@ -40,3 +40,21 @@ python -m worker.pipeline run <jobId>
   鏡写しして両耳に合成し、`transform` はアンカー数と同じ長さの配列で保存する
   （左右を個別に調整できるように）
 - レビュー画面の大きさ・位置変更は Web（sharp）が scene＋cutout から再合成します。
+
+## 人物シーン（fal.ai）
+
+`apps/web/.env.local` に `FAL_KEY` を入れると、ワーカーが本物の人物シーンを呼びます。
+
+```
+FAL_KEY=fal_...
+```
+
+流れ（1ジョブあたり最大約 8 回の画像生成 API）:
+
+1. `PresetPersona.imageKey`（URL またはローカルパス）があればそれを顔参照に使う  
+2. なければ `fal-ai/flux/dev` で人物の参照ポートレートを1枚生成  
+3. 各シーンを `fal-ai/flux-pulid` で生成（ジュエリーは描かせない）  
+4. 1024 四方 → 2000×2000 に拡大。呼び出し回数は `Job.apiCallCount` に加算
+
+キーが無いときは従来どおりローカルのシルエット仮画像です（課金なし）。  
+**コード変更後はワーカープロセスの再起動が必要です。**

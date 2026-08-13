@@ -4,13 +4,12 @@ Ti amo Jewelry Studio — Phase 2–3 worker.
 Queue: Redis list `tiamo:jobs`
 Stages: ingest → cutout → detail → scene → composite → inset → ready
 
-Scene: local persona-consistent placeholders (FAL_KEY があれば将来差し替え).
+Scene: FAL_KEY あり → Flux + PuLID（同一人物）。なし → ローカル仮シーン。
 Composite: real cutout on scene with category anchors + transform JSON.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import os
@@ -22,8 +21,10 @@ from pathlib import Path
 import numpy as np
 import psycopg
 from dotenv import load_dotenv
-from PIL import Image, ImageDraw, ImageEnhance, ImageFont, ImageOps
+from PIL import Image, ImageEnhance, ImageOps
 from redis import Redis
+
+from worker.scene_gen import generate_all_scenes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,16 +73,6 @@ SLOT_DETAIL = ["detail_a", "detail_b", "detail_c"]
 WEAR_SLOTS = ["wear_office", "wear_cafe", "wear_date", "wear_holiday"]
 BODY_SLOTS = ["body_1", "body_2"]
 SCENE_SLOTS = WEAR_SLOTS + BODY_SLOTS + ["wide_inset"]
-
-SCENE_META = {
-    "wear_office": {"label": "office", "mode": "bust", "bg": (214, 208, 198)},
-    "wear_cafe": {"label": "cafe", "mode": "bust", "bg": (196, 178, 158)},
-    "wear_date": {"label": "date", "mode": "bust", "bg": (188, 176, 186)},
-    "wear_holiday": {"label": "holiday", "mode": "bust", "bg": (186, 198, 178)},
-    "body_1": {"label": "body · tone1", "mode": "full", "bg": (210, 200, 188)},
-    "body_2": {"label": "body · tone2", "mode": "full", "bg": (198, 188, 176)},
-    "wide_inset": {"label": "wide", "mode": "full", "bg": (204, 196, 184)},
-}
 
 ZIP_NAME = {
     "detail_a": "01_detail_a.jpg",
@@ -199,7 +190,8 @@ def load_job(conn, job_id: str) -> dict:
         cur.execute(
             """
             SELECT j.id, j.category, j.metal, j."mainIndex", j."toneIds",
-                   b.name AS background_name, p.name AS persona_name
+                   b.name AS background_name, p.name AS persona_name,
+                   p."imageKey" AS persona_image_key
             FROM "Job" j
             JOIN "PresetBackground" b ON b.id = j."backgroundId"
             JOIN "PresetPersona" p ON p.id = j."personaId"
@@ -228,7 +220,22 @@ def load_job(conn, job_id: str) -> dict:
             "tone_names": tone_names or ["トーン1", "トーン2"],
             "background_name": row[5],
             "persona_name": row[6],
+            "persona_image_key": row[7],
         }
+
+
+def bump_api_call_count(conn, job_id: str, n: int = 1) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE "Job"
+            SET "apiCallCount" = "apiCallCount" + %s,
+                "updatedAt" = NOW()
+            WHERE id = %s
+            """,
+            (n, job_id),
+        )
+    conn.commit()
 
 
 def make_background(kind: str, size: int = SIZE) -> Image.Image:
@@ -284,54 +291,6 @@ def compose_detail(cutout: Image.Image, background: Image.Image, metal: str) -> 
     y = (SIZE - fitted.height) // 2
     canvas.alpha_composite(fitted, (x, y))
     return canvas.convert("RGB")
-
-
-def persona_palette(name: str) -> dict:
-    h = hashlib.sha256(name.encode("utf-8")).digest()
-    skin = (210 - h[0] % 40, 170 - h[1] % 30, 145 - h[2] % 25)
-    hair = (40 + h[3] % 50, 28 + h[4] % 30, 22 + h[5] % 25)
-    cloth = (55 + h[6] % 80, 48 + h[7] % 70, 42 + h[8] % 60)
-    return {"skin": skin, "hair": hair, "cloth": cloth}
-
-
-def render_scene(persona_name: str, slot: str, tone_label: str | None = None) -> Image.Image:
-    """Local stand-in for AI persona scenes — same palette per persona name."""
-    meta = SCENE_META[slot]
-    pal = persona_palette(persona_name)
-    img = Image.new("RGB", (SIZE, SIZE), meta["bg"])
-    draw = ImageDraw.Draw(img)
-    mode = meta["mode"]
-
-    if mode == "bust":
-        # shoulders / torso
-        draw.ellipse([500, 900, 1500, 2200], fill=pal["cloth"])
-        # neck
-        draw.rectangle([880, 720, 1120, 980], fill=pal["skin"])
-        # head
-        draw.ellipse([700, 280, 1300, 900], fill=pal["skin"])
-        # hair
-        draw.ellipse([680, 220, 1320, 620], fill=pal["hair"])
-        draw.pieslice([700, 400, 1300, 900], 200, 340, fill=pal["hair"])
-    else:
-        # full body silhouette
-        draw.ellipse([820, 120, 1180, 480], fill=pal["skin"])
-        draw.ellipse([800, 80, 1200, 300], fill=pal["hair"])
-        draw.rectangle([900, 450, 1100, 560], fill=pal["skin"])
-        draw.polygon([(700, 560), (1300, 560), (1200, 1200), (800, 1200)], fill=pal["cloth"])
-        draw.rectangle([820, 1200, 980, 1750], fill=(40, 36, 32))
-        draw.rectangle([1020, 1200, 1180, 1750], fill=(40, 36, 32))
-
-    label = meta["label"]
-    if tone_label:
-        label = f"{label} · {tone_label}"
-    caption = f"{persona_name} · {label} · local scene"
-    draw.rectangle([40, SIZE - 110, 900, SIZE - 40], fill=(26, 22, 18))
-    try:
-        font = ImageFont.truetype("arial.ttf", 36)
-    except OSError:
-        font = ImageFont.load_default()
-    draw.text((60, SIZE - 95), caption, fill=(232, 220, 200), font=font)
-    return img
 
 
 def default_transform() -> dict:
@@ -442,18 +401,26 @@ def run_job(conn, job_id: str) -> None:
 
     # --- scene ---
     set_stage(conn, job_id, "scene", "running")
-    scenes: dict[str, Image.Image] = {}
-    for slot in SCENE_SLOTS:
-        tone_label = None
-        if slot == "body_1":
-            tone_label = job["tone_names"][0] if job["tone_names"] else None
-        elif slot == "body_2":
-            tone_label = job["tone_names"][1] if len(job["tone_names"]) > 1 else None
-        scene = render_scene(job["persona_name"], slot, tone_label)
+
+    def on_api_call() -> None:
+        bump_api_call_count(conn, job_id, 1)
+
+    scenes = generate_all_scenes(
+        persona_name=job["persona_name"],
+        persona_image_key=job.get("persona_image_key"),
+        category=job["category"],
+        slots=SCENE_SLOTS,
+        tone_names=job["tone_names"],
+        scene_dir=scene_dir,
+        on_api_call=on_api_call,
+    )
+    ref_path = scene_dir / "persona_ref.jpg"
+    if ref_path.is_file():
+        upsert_asset(conn, job_id, "persona_ref", "persona_ref", str(ref_path))
+    for slot, scene in scenes.items():
         out = scene_dir / f"{slot}.jpg"
         scene.save(out, "JPEG", quality=90)
         upsert_asset(conn, job_id, slot, "scene", str(out))
-        scenes[slot] = scene
         logger.info("job_id=%s stage=scene slot=%s", job_id, slot)
 
     # --- composite ---

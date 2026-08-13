@@ -15,8 +15,12 @@
 - **直近やったこと:**
   1. レビュー画面の大きさ・位置調整を、スライダーから「画像の上で直接ドラッグ＆リサイズ」に変更
   2. ピアスは片耳分（1個）を3アングル撮影するだけでよく、システム側で自動的に両耳へ鏡写し合成する方式に決定・実装
-  3. ピアスの左右それぞれの大きさ・位置を個別にドラッグ調整できるように対応（顔の大きさに合わせた微調整用）
-  4. 上記をコミット・GitHub へ push 済み
+  3. ピアスの左右それぞれの大きさ・位置を個別にドラッグ調整できるように対応
+  4. **人物シーンを fal.ai 差し込み可能に**（`apps/worker/worker/scene_gen.py`）
+     - `FAL_KEY` あり → `fal-ai/flux/dev` で参照顔 → `fal-ai/flux-pulid` で7シーン（同一人物）
+     - `FAL_KEY` なし → 従来のローカル仮シーン（課金なし）
+     - `PresetPersona.imageKey`（URL/ローカルパス）があれば参照顔に優先利用
+     - API 呼び出し回数は `Job.apiCallCount` に加算（目安 最大約8回/ジョブ）
 
 ## 技術的なポイント（新しいチャットが実装を続けるときに知っておくべきこと）
 
@@ -31,6 +35,8 @@
 - 実際の初回合成（ジョブ作成時）は Python ワーカー（`apps/worker/worker/pipeline.py`）が担当。
   Web 側の再合成ロジック（`apps/web/src/lib/recomposite.ts`, sharp）とほぼ同じ計算式を
   Python（Pillow）で再実装しているので、アンカーやtransformの仕様を変える時は**両方**直す必要がある
+- 人物シーン生成は `apps/worker/worker/scene_gen.py`。プロンプトはカテゴリ別に
+  「ジュエリーを載せたい部位を裸で見せる」指示付き。ジュエリー自体は描かせない
 
 ## 開発環境の起動
 
@@ -45,16 +51,24 @@ npm run dev                   # apps/web（Next.js, localhost:3000）
 ```bash
 cd apps/worker
 .venv\Scripts\activate        # 初回は python -m venv .venv 済ませておく
+pip install -r requirements.txt
 python -m worker.pipeline
 ```
 
 ログイン: `ec-team` / `studio`
 
+本物の人物シーンを試すときは `apps/web/.env.local` に:
+
+```
+FAL_KEY=fal_...
+```
+
 **注意:** ワーカーは Python プロセスなのでコード変更後は再起動が必要（ホットリロードなし）。
-今回の作業中、実際に一度これで「古いロジックのまま」動いてしまうミスがあった。
+`FAL_KEY` を後から足した場合も再起動が必要。
 
 ## 未着手・今後の候補
 
+- Phase 3 残り: 実キーでの画質確認・プロンプト調整・persona 参照写真の本番データ投入
 - Phase 4: インセット選び直し・枠再生成・進捗磨き・プリセット追加
 - Phase 5: 画質・リトライ・14日削除・デプロイ固め
-- `docs/REQUIREMENTS.md` §9「未決」に残っている項目（画像生成APIベンダー選定など）
+- `docs/REQUIREMENTS.md` §9「未決」の残り（コスト上限の具体値、ホスティング等）
