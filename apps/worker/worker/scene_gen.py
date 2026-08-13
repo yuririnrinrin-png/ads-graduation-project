@@ -25,19 +25,32 @@ SIZE = 2000
 FAL_GEN_SIZE = 1024  # generate square_hd-ish, then upscale to SIZE
 
 # Seed personas: stable appearance text so Flux can invent a reference face.
+# IMPORTANT: this must NOT mention hairstyle/state (up, down, ponytail, etc).
+# It used to bake in a fixed hairstyle (e.g. "long wavy hair"), which then
+# contradicted the per-slot "hair up in a bun" instructions below in the same
+# prompt — the model almost always obeyed this earlier, stronger-sounding
+# description and ignored the later hair override. Hair length/color only
+# (not styling state) lives in PERSONA_HAIR so it can be combined with a
+# per-slot style word without conflicting.
 PERSONA_LOOK = {
     "Sofia": (
-        "Italian woman in her late 20s, warm olive skin, long wavy chestnut hair, "
-        "soft brown eyes, refined features, natural makeup"
+        "Italian woman in her late 20s, warm olive skin, soft brown eyes, "
+        "refined features, natural makeup"
     ),
     "Elena": (
-        "Italian woman in her early 30s, fair skin with light freckles, shoulder-length "
-        "ash-brown hair, hazel eyes, elegant quiet expression"
+        "Italian woman in her early 30s, fair skin with light freckles, "
+        "hazel eyes, elegant quiet expression"
     ),
     "Mia": (
-        "young Italian woman about 25, light tan skin, dark straight hair in a low "
-        "ponytail, dark eyes, fresh minimal makeup"
+        "young Italian woman about 25, light tan skin, dark eyes, fresh minimal makeup"
     ),
+}
+
+# Hair length/color only — no styling state (that comes from HAIR_STYLE per slot).
+PERSONA_HAIR = {
+    "Sofia": "long chestnut-brown hair",
+    "Elena": "shoulder-length ash-brown hair",
+    "Mia": "dark hair",
 }
 
 SCENE_META = {
@@ -157,38 +170,38 @@ POSE_VARIATION = {
 HAIR_STYLE = {
     "wear_office": (
         "up",
-        "her hair fully swept up and back into a sleek low bun, every strand "
-        "pulled cleanly away from her neck",
+        "fully swept up and back into a sleek low bun, every strand pulled "
+        "cleanly away from her neck — NOT flowing, NOT loose",
     ),
     "wear_cafe": (
         "down",
-        "her hair completely down and loose, long wavy hair flowing freely "
-        "over both shoulders and down her back",
+        "completely down and loose, flowing freely over both shoulders and "
+        "down her back",
     ),
     "wear_date": (
         "up",
-        "her hair swept up into a high sleek ponytail gathered at the crown, "
-        "smooth against her head",
+        "swept up into a high sleek ponytail gathered at the crown, smooth "
+        "against her head — NOT flowing, NOT loose",
     ),
     "wear_holiday": (
         "down",
-        "her hair completely down and loose, wind-blown waves flowing freely "
-        "past her shoulders",
+        "completely down and loose, wind-blown waves flowing freely past her "
+        "shoulders",
     ),
     "body_1": (
         "up",
-        "her hair swept back into a smooth low chignon at the nape of her "
-        "neck, sleek and fully gathered",
+        "swept back into a smooth low chignon at the nape of her neck, sleek "
+        "and fully gathered — NOT flowing, NOT loose",
     ),
     "body_2": (
         "down",
-        "her hair completely down and loose, natural tousled waves falling "
-        "freely past her shoulders",
+        "completely down and loose, natural tousled waves falling freely "
+        "past her shoulders",
     ),
     "wide_inset": (
         "half",
-        "her hair styled half-up half-down — the top section gathered back "
-        "while the rest falls loosely past her shoulders",
+        "styled half-up half-down — the top section gathered back while the "
+        "rest falls loosely past her shoulders",
     ),
 }
 
@@ -202,8 +215,9 @@ HAIR_NEGATIVE_BY_STATE = {
 # What body region the wear shot must expose for later jewelry composite.
 CATEGORY_FRAMING = {
     "necklace": (
-        "bust-up portrait showing face, neck, and upper chest. "
-        "Bare neck and décolletage clearly visible"
+        "bust-up portrait showing face, neck, and upper chest, camera pulled "
+        "back enough that neck and collarbones are clearly inside the frame "
+        "(not a tight face-only close-up). Bare neck and décolletage clearly visible"
     ),
     "earring": (
         "close portrait of the face with both ears clearly visible. "
@@ -223,7 +237,8 @@ NEGATIVE = (
     "jewelry, necklace, earrings, rings, bracelet, watch, accessories, "
     "text, watermark, logo, deformed hands, extra fingers, low quality, blurry, "
     "neutral expressionless face, blank stare, straight-on symmetric portrait, "
-    "stiff passport-photo pose"
+    "stiff passport-photo pose, extreme close-up, tight face-only crop, "
+    "face filling the entire frame, cropped above the collarbone"
 )
 
 # Face-lock models bias toward tight headshots; push back for the wider
@@ -249,14 +264,24 @@ def persona_look(name: str) -> str:
     )
 
 
+def persona_hair(name: str) -> str:
+    if name in PERSONA_HAIR:
+        return PERSONA_HAIR[name]
+    h = hashlib.sha256(name.encode("utf-8")).hexdigest()
+    return f"medium-length brown hair (id {h[:4]})"
+
+
 def category_framing(category: str) -> str:
     return CATEGORY_FRAMING.get(category, CATEGORY_FRAMING["necklace"])
 
 
 def build_reference_prompt(persona_name: str) -> str:
     look = persona_look(persona_name)
+    hair = persona_hair(persona_name)
     return (
-        f"Photorealistic head-and-shoulders portrait of {look}. "
+        f"Photorealistic head-and-shoulders portrait of {look}, with {hair} "
+        "worn down naturally. Camera pulled back enough to show her neck "
+        "and collarbones, not just a tight face close-up. "
         "Facing camera, neutral soft expression, studio softbox lighting, "
         "plain warm gray background, high detail skin, 85mm lens. "
         "No jewelry, no earrings, bare ears and neck visible."
@@ -282,14 +307,18 @@ def build_scene_prompt(
     tone_label: str | None = None,
 ) -> str:
     look = persona_look(persona_name)
+    hair_color = persona_hair(persona_name)
     meta = SCENE_META[slot]
     framing = category_framing(category)
 
     pose = POSE_VARIATION.get(slot, "natural relaxed expression and pose")
-    _, hair = HAIR_STYLE.get(slot, ("down", "her hair worn naturally"))
+    _, hair_style = HAIR_STYLE.get(slot, ("down", "worn naturally"))
     # Hair goes right after the subject, before fashion/setting, so it isn't
     # drowned out — prompt position matters for how strongly it's honored.
-    hair_line = f"Hairstyle: {hair}. This is important and must be followed exactly."
+    # (Do not also repeat/shout this elsewhere in the prompt: doing so in an
+    # earlier pass made the model zoom in tight on the face/hair and broke
+    # the fixed-anchor neck framing — see docs/HANDOFF.md.)
+    hair_line = f"Hairstyle: her {hair_color} is {hair_style}."
 
     if meta["mode"] == "bust":
         setting = WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
@@ -413,6 +442,13 @@ def generate_scene_fal(
             "reference_image_url": reference_image_url,
             "image_size": {"width": FAL_GEN_SIZE, "height": FAL_GEN_SIZE},
             "num_inference_steps": 24,
+            # NOTE: pushing guidance_scale up / id_weight down further (tried
+            # 5.0-5.5 / 0.5-0.6 in an earlier pass) made the model crop in
+            # much tighter on the face, breaking the fixed-anchor jewelry
+            # placement (necklace landed on the nose/mouth instead of the
+            # neck) — see docs/HANDOFF.md. Keep these at the values that were
+            # confirmed to frame correctly; fix hairstyle/pose adherence via
+            # prompt wording instead of these knobs.
             "guidance_scale": 4.5 if is_full else 4.2,
             "negative_prompt": negative,
             "id_weight": 0.65 if is_full else 0.75,

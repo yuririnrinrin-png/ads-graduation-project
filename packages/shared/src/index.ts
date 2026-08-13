@@ -155,7 +155,15 @@ export const DEFAULT_TRANSFORM: SlotTransform = {
   offsetY: 0,
 };
 
-export type Anchor = { x: number; y: number; scale: number };
+/**
+ * `rotate` (degrees, clockwise) is an optional fixed baseline tilt applied at
+ * composite time — NOT a per-shot 3D perspective correction, and not
+ * user-adjustable via drag (REQUIREMENTS.md §5/§8 still rule out real
+ * perspective auto-correction / AI-drawn jewelry). It only exists to break
+ * up the perfectly flat/"pasted on" look of a straight cutout sitting on a
+ * neck/ear that is rarely perfectly upright. Defaults to 0 when omitted.
+ */
+export type Anchor = { x: number; y: number; scale: number; rotate?: number };
 
 /**
  * Anchor points = center of jewelry on canvas (0–1), scale = width vs canvas.
@@ -164,10 +172,10 @@ export type Anchor = { x: number; y: number; scale: number };
  * (REQUIREMENTS.md §2 決定 2026-08-12).
  */
 export const CATEGORY_ANCHORS: Record<Category, Anchor[]> = {
-  necklace: [{ x: 0.5, y: 0.36, scale: 0.28 }],
+  necklace: [{ x: 0.5, y: 0.36, scale: 0.28, rotate: 6 }],
   earring: [
-    { x: 0.4, y: 0.32, scale: 0.09 },
-    { x: 0.6, y: 0.32, scale: 0.09 },
+    { x: 0.4, y: 0.32, scale: 0.09, rotate: 6 },
+    { x: 0.6, y: 0.32, scale: 0.09, rotate: -6 },
   ],
   ring: [{ x: 0.58, y: 0.66, scale: 0.13 }],
   bracelet: [{ x: 0.46, y: 0.55, scale: 0.2 }],
@@ -175,10 +183,10 @@ export const CATEGORY_ANCHORS: Record<Category, Anchor[]> = {
 
 /** Full-body frames use a slightly lower / smaller default. */
 export const BODY_ANCHORS: Record<Category, Anchor[]> = {
-  necklace: [{ x: 0.5, y: 0.32, scale: 0.14 }],
+  necklace: [{ x: 0.5, y: 0.32, scale: 0.14, rotate: 4 }],
   earring: [
-    { x: 0.46, y: 0.22, scale: 0.045 },
-    { x: 0.54, y: 0.22, scale: 0.045 },
+    { x: 0.46, y: 0.22, scale: 0.045, rotate: 4 },
+    { x: 0.54, y: 0.22, scale: 0.045, rotate: -4 },
   ],
   ring: [{ x: 0.55, y: 0.58, scale: 0.07 }],
   bracelet: [{ x: 0.48, y: 0.48, scale: 0.1 }],

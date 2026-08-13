@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import psycopg
 from dotenv import load_dotenv
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from redis import Redis
 
 from worker.scene_gen import generate_all_scenes
@@ -50,23 +50,27 @@ BG_BY_NAME = {
 
 # Anchor lists: earrings get 2 anchors (single cutout mirrored onto both ears —
 # no separate left/right shoot needed (REQUIREMENTS.md §2 決定 2026-08-12).
+# `rotate` (degrees, clockwise) is a small fixed baseline tilt — NOT a per-shot
+# 3D perspective correction and not user-adjustable — added only to soften the
+# "pasted flat" look of a straight cutout on a neck/ear that is rarely
+# perfectly upright. Must mirror packages/shared/src/index.ts exactly.
 CATEGORY_ANCHORS = {
-    "necklace": [{"x": 0.5, "y": 0.36, "scale": 0.28}],
+    "necklace": [{"x": 0.5, "y": 0.36, "scale": 0.28, "rotate": 6}],
     "earring": [
-        {"x": 0.4, "y": 0.32, "scale": 0.09},
-        {"x": 0.6, "y": 0.32, "scale": 0.09},
+        {"x": 0.4, "y": 0.32, "scale": 0.09, "rotate": 6},
+        {"x": 0.6, "y": 0.32, "scale": 0.09, "rotate": -6},
     ],
-    "ring": [{"x": 0.58, "y": 0.66, "scale": 0.13}],
-    "bracelet": [{"x": 0.46, "y": 0.55, "scale": 0.2}],
+    "ring": [{"x": 0.58, "y": 0.66, "scale": 0.13, "rotate": 0}],
+    "bracelet": [{"x": 0.46, "y": 0.55, "scale": 0.2, "rotate": 0}],
 }
 BODY_ANCHORS = {
-    "necklace": [{"x": 0.5, "y": 0.32, "scale": 0.14}],
+    "necklace": [{"x": 0.5, "y": 0.32, "scale": 0.14, "rotate": 4}],
     "earring": [
-        {"x": 0.46, "y": 0.22, "scale": 0.045},
-        {"x": 0.54, "y": 0.22, "scale": 0.045},
+        {"x": 0.46, "y": 0.22, "scale": 0.045, "rotate": 4},
+        {"x": 0.54, "y": 0.22, "scale": 0.045, "rotate": -4},
     ],
-    "ring": [{"x": 0.55, "y": 0.58, "scale": 0.07}],
-    "bracelet": [{"x": 0.48, "y": 0.48, "scale": 0.1}],
+    "ring": [{"x": 0.55, "y": 0.58, "scale": 0.07, "rotate": 0}],
+    "bracelet": [{"x": 0.48, "y": 0.48, "scale": 0.1, "rotate": 0}],
 }
 
 SLOT_DETAIL = ["detail_a", "detail_b", "detail_c"]
@@ -282,6 +286,26 @@ def apply_metal_tint(img: Image.Image, metal: str) -> Image.Image:
     return ImageEnhance.Contrast(out).enhance(1.05)
 
 
+def make_shadow_layer(rgba: Image.Image, *, blur: int, opacity: int) -> tuple[Image.Image, int]:
+    """Soft blurred dark silhouette from an RGBA cutout's alpha channel.
+
+    Used as a light contact shadow so a flat real-photo cutout doesn't read
+    as "pasted on top" of the scene/background — NOT a 3D relight, just a
+    cheap grounding cue (REQUIREMENTS.md §5: no AI-drawn jewelry, no real
+    perspective correction; this is a lightweight exception approved
+    2026-08-13, see docs/HANDOFF.md). Returns (shadow_image, pad) where pad
+    is how much bigger the shadow canvas is on each side vs. the input, so
+    callers can offset the paste position accordingly.
+    """
+    alpha = rgba.split()[-1]
+    pad = blur * 2
+    padded_alpha = Image.new("L", (alpha.width + pad * 2, alpha.height + pad * 2), 0)
+    padded_alpha.paste(alpha, (pad, pad))
+    dark = Image.new("RGBA", padded_alpha.size, (12, 10, 8, 0))
+    dark.putalpha(padded_alpha.point(lambda v: int(v * opacity / 255)))
+    return dark.filter(ImageFilter.GaussianBlur(blur)), pad
+
+
 def compose_detail(cutout: Image.Image, background: Image.Image, metal: str) -> Image.Image:
     tinted = apply_metal_tint(cutout, metal)
     max_side = int(SIZE * 0.72)
@@ -289,6 +313,9 @@ def compose_detail(cutout: Image.Image, background: Image.Image, metal: str) -> 
     canvas = background.copy().convert("RGBA")
     x = (SIZE - fitted.width) // 2
     y = (SIZE - fitted.height) // 2
+    shadow, pad = make_shadow_layer(fitted, blur=14, opacity=90)
+    shadow_offset = max(6, int(fitted.width * 0.02))
+    canvas.alpha_composite(shadow, (x - pad, y - pad + shadow_offset))
     canvas.alpha_composite(fitted, (x, y))
     return canvas.convert("RGB")
 
@@ -328,10 +355,22 @@ def composite_on_scene(
         fitted = ImageOps.contain(tinted, (jewel_w, jewel_w))
         if i % 2 == 1:
             fitted = ImageOps.mirror(fitted)
+        # Fixed baseline tilt (not a 3D perspective fix, see Anchor docstring
+        # in packages/shared/src/index.ts) so a straight cutout doesn't look
+        # perfectly flat/pasted on a neck or ear that is rarely upright.
+        rotate = anchor.get("rotate", 0)
+        if rotate:
+            # anchor["rotate"] is degrees clockwise (matches sharp's
+            # convention on the web side); Pillow's rotate() is
+            # counter-clockwise for positive angles, so negate here.
+            fitted = fitted.rotate(-rotate, resample=Image.BICUBIC, expand=True)
         cx = int(SIZE * anchor["x"] + float(t.get("offsetX", 0)))
         cy = int(SIZE * anchor["y"] + float(t.get("offsetY", 0)))
         x = cx - fitted.width // 2
         y = cy - fitted.height // 2
+        shadow, pad = make_shadow_layer(fitted, blur=16, opacity=95)
+        shadow_offset = max(6, int(fitted.width * 0.03))
+        canvas.alpha_composite(shadow, (x - pad, y - pad + shadow_offset))
         canvas.alpha_composite(fitted, (x, y))
     return canvas.convert("RGB")
 
