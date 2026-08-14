@@ -58,6 +58,8 @@ model Job {
   toneIds        String[]
   personaId      String
   backgroundId   String
+  /** Which detail preview is pasted into the wide+inset corner (detail_a|b|c). */
+  insetSlot      String         @default("detail_a")
   persona        PresetPersona  @relation(fields: [personaId], references: [id])
   background     PresetBackground @relation(fields: [backgroundId], references: [id])
   apiCallCount   Int            @default(0)

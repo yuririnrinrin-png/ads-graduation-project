@@ -200,6 +200,9 @@ export const BODY_ANCHORS: Record<Category, Anchor[]> = {
   bracelet: [{ x: 0.48, y: 0.48, scale: 0.1 }],
 };
 
+export const DETAIL_SLOTS = ["detail_a", "detail_b", "detail_c"] as const;
+export type DetailSlot = (typeof DETAIL_SLOTS)[number];
+
 export const WEAR_SLOTS = [
   "wear_office",
   "wear_cafe",
@@ -216,6 +219,10 @@ export const COMPOSITE_SLOTS = [
 
 export function isBodySlot(slot: string): boolean {
   return slot === "body_1" || slot === "body_2" || slot === "wide_inset";
+}
+
+export function isDetailSlot(slot: string): slot is DetailSlot {
+  return (DETAIL_SLOTS as readonly string[]).includes(slot);
 }
 
 /** Anchor points for a category/frame combo (2 for earrings = left/right ear). */

@@ -38,7 +38,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     return new NextResponse(buf, {
       headers: {
         "Content-Type": "image/jpeg",
-        "Cache-Control": "private, max-age=60",
+        "Cache-Control": "private, no-store, max-age=0, must-revalidate",
       },
     });
   } catch {

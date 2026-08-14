@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import path from "path";
 import sharp from "sharp";
-import { CATEGORIES, METALS } from "@ti-amo/shared";
+import { CATEGORIES, DETAIL_SLOTS, METALS } from "@ti-amo/shared";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import {
@@ -19,6 +19,7 @@ const metaSchema = z.object({
   personaId: z.string().min(1),
   backgroundId: z.string().min(1),
   toneIds: z.array(z.string()).length(2),
+  insetSlot: z.enum(DETAIL_SLOTS).default("detail_a"),
 });
 
 export async function GET() {
@@ -86,6 +87,7 @@ export async function POST(req: Request) {
     personaId: form.get("personaId"),
     backgroundId: form.get("backgroundId"),
     toneIds,
+    insetSlot: form.get("insetSlot") || "detail_a",
   });
 
   if (!parsed.success) {
@@ -127,6 +129,7 @@ export async function POST(req: Request) {
       personaId: data.personaId,
       backgroundId: data.backgroundId,
       toneIds: data.toneIds,
+      insetSlot: data.insetSlot,
       expiresAt,
     },
   });

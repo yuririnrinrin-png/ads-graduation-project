@@ -42,7 +42,20 @@ export function getRedis() {
   return redis;
 }
 
-export async function enqueueJob(jobId: string) {
+export type QueuePayload = {
+  jobId: string;
+  /** Resume pipeline from this stage (inclusive). */
+  fromStage?: string;
+  /** If set, only regenerate these slots instead of the full pipeline. */
+  slots?: string[];
+};
+
+export async function enqueueJob(
+  jobId: string,
+  extra?: Omit<QueuePayload, "jobId">
+) {
   const r = getRedis();
-  await r.lpush(QUEUE_KEY, jobId);
+  const hasExtra = Boolean(extra?.fromStage || extra?.slots?.length);
+  const payload = hasExtra ? JSON.stringify({ jobId, ...extra }) : jobId;
+  await r.lpush(QUEUE_KEY, payload);
 }

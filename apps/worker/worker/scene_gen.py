@@ -13,6 +13,7 @@ import hashlib
 import io
 import logging
 import os
+import random
 from pathlib import Path
 from typing import Callable
 from urllib.request import urlopen
@@ -498,6 +499,9 @@ def generate_scene_fal(
     is_full = mode == "full"
     negative = negative_prompt or (NEGATIVE_FULL_BODY if is_full else NEGATIVE)
     id_w = slot_id_weight(slot, mode) if slot else (0.55 if is_full else 0.62)
+    # Omit/0 makes every regen a copy of the first shot (same prompt + same face).
+    seed = random.randint(1, 2_147_483_647)
+    logger.info("scene fal seed=%s slot=%s", seed, slot)
     result = _fal_subscribe(
         "fal-ai/flux-pulid",
         {
@@ -505,6 +509,7 @@ def generate_scene_fal(
             "reference_image_url": reference_image_url,
             "image_size": {"width": FAL_GEN_SIZE, "height": FAL_GEN_SIZE},
             "num_inference_steps": 24,
+            "seed": seed,
             # Face-based jewelry placement now exists (face_anchor.py), so a
             # slightly looser ID lock is safe. The bigger fix is
             # max_sequence_length=512: the default 128 was truncating pose/hair
@@ -560,7 +565,7 @@ def render_scene_local(
     label = meta["label"]
     if tone_label:
         label = f"{label} · {tone_label}"
-    caption = f"{persona_name} · {label} · local scene"
+    caption = f"{persona_name} · {label} · local scene · {random.randint(100, 999)}"
     draw.rectangle([40, SIZE - 110, 900, SIZE - 40], fill=(26, 22, 18))
     try:
         font = ImageFont.truetype("arial.ttf", 36)
@@ -579,10 +584,12 @@ def generate_all_scenes(
     tone_names: list[str],
     scene_dir: Path,
     on_api_call: Callable[[], None] | None = None,
+    reuse_reference_path: Path | None = None,
 ) -> dict[str, Image.Image]:
     """
-    Build person-only scenes for every slot.
+    Build person-only scenes for the given slots.
     Saves optional persona_ref.jpg when using fal.
+    On slot regen, pass reuse_reference_path so the face stays the same person.
     """
     scenes: dict[str, Image.Image] = {}
 
@@ -594,17 +601,23 @@ def generate_all_scenes(
         return scenes
 
     logger.info("FAL_KEY set — generating scenes via flux/dev + flux-pulid")
-    ref_url = resolve_reference_url(
-        persona_name, persona_image_key, on_api_call=on_api_call
-    )
-    # Keep a local copy of the reference for debugging / Phase 4 regen.
-    try:
-        ref_img = _to_square_size(_download_image(ref_url), SIZE)
-        ref_path = scene_dir / "persona_ref.jpg"
-        ref_img.save(ref_path, "JPEG", quality=90)
-        logger.info("saved persona reference %s", ref_path)
-    except Exception:
-        logger.exception("could not cache persona reference image")
+    cached = reuse_reference_path if reuse_reference_path and reuse_reference_path.is_file() else None
+    if cached:
+        import fal_client
+
+        ref_url = fal_client.upload_file(str(cached))
+        logger.info("reusing cached persona reference %s", cached)
+    else:
+        ref_url = resolve_reference_url(
+            persona_name, persona_image_key, on_api_call=on_api_call
+        )
+        try:
+            ref_img = _to_square_size(_download_image(ref_url), SIZE)
+            ref_path = scene_dir / "persona_ref.jpg"
+            ref_img.save(ref_path, "JPEG", quality=90)
+            logger.info("saved persona reference %s", ref_path)
+        except Exception:
+            logger.exception("could not cache persona reference image")
 
     for slot in slots:
         tone_label = _tone_for_slot(slot, tone_names)

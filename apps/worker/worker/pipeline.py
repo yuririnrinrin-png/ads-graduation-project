@@ -1,11 +1,8 @@
 """
-Ti amo Jewelry Studio — Phase 2–3 worker.
+Ti amo Jewelry Studio — Phase 2–4 worker.
 
-Queue: Redis list `tiamo:jobs`
+Queue: Redis list `tiamo:jobs` (jobId or JSON {jobId, fromStage, slots})
 Stages: ingest → cutout → detail → scene → composite → inset → ready
-
-Scene: FAL_KEY あり → Flux + PuLID（同一人物）。なし → ローカル仮シーン。
-Composite: real cutout on scene with category anchors + transform JSON.
 """
 
 from __future__ import annotations
@@ -196,7 +193,8 @@ def load_job(conn, job_id: str) -> dict:
             """
             SELECT j.id, j.category, j.metal, j."mainIndex", j."toneIds",
                    b.name AS background_name, p.name AS persona_name,
-                   p."imageKey" AS persona_image_key
+                   p."imageKey" AS persona_image_key,
+                   j."insetSlot" AS inset_slot
             FROM "Job" j
             JOIN "PresetBackground" b ON b.id = j."backgroundId"
             JOIN "PresetPersona" p ON p.id = j."personaId"
@@ -226,6 +224,7 @@ def load_job(conn, job_id: str) -> dict:
             "background_name": row[5],
             "persona_name": row[6],
             "persona_image_key": row[7],
+            "inset_slot": row[8] if len(row) > 8 and row[8] in SLOT_DETAIL else "detail_a",
         }
 
 
@@ -377,7 +376,7 @@ def composite_on_scene(
 
 
 def add_inset(wide: Image.Image, detail: Image.Image) -> Image.Image:
-    """Bottom-right detail inset (Phase 3 simple; Phase 4 may refine source choice)."""
+    """Bottom-right detail inset. Source detail is chosen via Job.insetSlot."""
     canvas = wide.convert("RGBA")
     inset_size = 520
     thumb = ImageOps.contain(detail.convert("RGBA"), (inset_size, inset_size))
@@ -390,27 +389,134 @@ def add_inset(wide: Image.Image, detail: Image.Image) -> Image.Image:
     return canvas.convert("RGB")
 
 
-def run_job(conn, job_id: str) -> None:
-    t0 = time.time()
-    logger.info("job_id=%s start", job_id)
-    job = load_job(conn, job_id)
-    root = job_dir(job_id)
-    input_dir = root / "input"
-    cutout_dir = root / "cutout"
-    scene_dir = root / "scene"
-    preview_dir = root / "preview"
-    for d in (cutout_dir, scene_dir, preview_dir):
-        d.mkdir(parents=True, exist_ok=True)
+STAGE_ORDER = ["ingest", "cutout", "detail", "scene", "composite", "inset"]
 
-    # --- ingest ---
-    set_stage(conn, job_id, "ingest", "running")
-    inputs = sorted(input_dir.glob("product_*.jpg"))
-    if len(inputs) != 3:
-        raise RuntimeError(f"Expected 3 inputs, found {len(inputs)}")
-    logger.info("job_id=%s stage=ingest ok", job_id)
 
-    # --- cutout ---
-    set_stage(conn, job_id, "cutout", "running")
+def parse_queue_item(raw: str) -> tuple[str, str | None, list[str] | None]:
+    raw = (raw or "").strip()
+    if raw.startswith("{"):
+        data = json.loads(raw)
+        slots = data.get("slots")
+        if isinstance(slots, str):
+            slots = [slots]
+        return str(data["jobId"]), data.get("fromStage"), slots
+    return raw, None, None
+
+
+def stage_rank(stage: str | None) -> int:
+    if not stage:
+        return 0
+    try:
+        return STAGE_ORDER.index(stage)
+    except ValueError:
+        return 0
+
+
+def require_file(path: Path) -> Path:
+    if not path.is_file():
+        raise RuntimeError(f"チェックポイントがありません: {path.name}")
+    return path
+
+
+def load_cutouts_from_disk(cutout_dir: Path) -> list[Image.Image]:
+    out: list[Image.Image] = []
+    for i in range(3):
+        path = require_file(cutout_dir / f"cutout_{i}.png")
+        out.append(Image.open(path).convert("RGBA"))
+    return out
+
+
+def load_scene_image(scene_dir: Path, slot: str) -> Image.Image:
+    return Image.open(require_file(scene_dir / f"{slot}.jpg")).convert("RGB")
+
+
+def load_detail_image(preview_dir: Path, slot: str) -> Image.Image:
+    return Image.open(require_file(preview_dir / ZIP_NAME[slot])).convert("RGB")
+
+
+def load_preview_transform(conn, job_id: str, slot: str) -> list[dict] | None:
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT transform FROM "JobAsset"
+            WHERE "jobId" = %s AND "slotKey" = %s AND kind = 'preview'
+            LIMIT 1
+            """,
+            (job_id, slot),
+        )
+        row = cur.fetchone()
+    if not row or row[0] is None:
+        return None
+    raw = row[0]
+    if isinstance(raw, str):
+        raw = json.loads(raw)
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, dict):
+        return [raw]
+    return None
+
+
+def save_scene_slots(conn, job_id: str, scene_dir: Path, scenes: dict[str, Image.Image]) -> None:
+    ref_path = scene_dir / "persona_ref.jpg"
+    if ref_path.is_file():
+        upsert_asset(conn, job_id, "persona_ref", "persona_ref", str(ref_path))
+    for slot, scene in scenes.items():
+        out = scene_dir / f"{slot}.jpg"
+        scene.save(out, "JPEG", quality=90)
+        upsert_asset(conn, job_id, slot, "scene", str(out))
+        logger.info("job_id=%s stage=scene slot=%s", job_id, slot)
+
+
+def composite_slot(
+    conn,
+    job_id: str,
+    job: dict,
+    slot: str,
+    scene: Image.Image,
+    main_cut: Image.Image,
+    preview_dir: Path,
+    *,
+    reuse_transform: bool = False,
+) -> list[dict]:
+    body = slot in BODY_SLOTS or slot == "wide_inset"
+    ts = None
+    if reuse_transform:
+        ts = load_preview_transform(conn, job_id, slot)
+    if ts is None:
+        ts = transforms_from_face(scene, get_anchors(job["category"], body), job["category"])
+    img = composite_on_scene(
+        scene, main_cut, job["category"], job["metal"], body=body, transforms=ts
+    )
+    if slot != "wide_inset":
+        out = preview_dir / ZIP_NAME[slot]
+        img.save(out, "JPEG", quality=90)
+        upsert_asset(conn, job_id, slot, "preview", str(out), transform=ts)
+    logger.info("job_id=%s stage=composite slot=%s transform=%s", job_id, slot, ts)
+    return ts
+
+
+def write_inset(
+    conn,
+    job_id: str,
+    job: dict,
+    wide_rgb: Image.Image,
+    wide_ts: list[dict],
+    preview_dir: Path,
+    detail_imgs: dict[str, Image.Image],
+) -> None:
+    inset_key = job.get("inset_slot") or "detail_a"
+    detail = detail_imgs.get(inset_key) or detail_imgs.get("detail_a")
+    if detail is None:
+        raise RuntimeError("インセット用のディテール画像がありません")
+    wide_final = add_inset(wide_rgb, detail)
+    out = preview_dir / ZIP_NAME["wide_inset"]
+    wide_final.save(out, "JPEG", quality=90)
+    upsert_asset(conn, job_id, "wide_inset", "preview", str(out), transform=wide_ts)
+    logger.info("job_id=%s stage=inset source=%s", job_id, inset_key)
+
+
+def run_cutouts(conn, job_id: str, inputs: list[Path], cutout_dir: Path) -> list[Image.Image]:
     cutouts: list[Image.Image] = []
     for i, path in enumerate(inputs):
         src = ImageOps.exif_transpose(Image.open(path))
@@ -423,95 +529,210 @@ def run_job(conn, job_id: str) -> None:
         upsert_asset(conn, job_id, f"cutout_{i}", "cutout", str(out))
         cutouts.append(cut)
         logger.info("job_id=%s stage=cutout i=%s", job_id, i)
+    return cutouts
 
-    main_cut = cutouts[min(job["mainIndex"], 2)]
 
-    # --- detail ---
-    set_stage(conn, job_id, "detail", "running")
+def run_details(
+    conn,
+    job_id: str,
+    job: dict,
+    cutouts: list[Image.Image],
+    preview_dir: Path,
+    slots: list[str] | None = None,
+) -> dict[str, Image.Image]:
     bg_kind = BG_BY_NAME.get(job["background_name"], "marble_white")
     background = make_background(bg_kind)
-    detail_imgs: list[Image.Image] = []
-    for i, slot in enumerate(SLOT_DETAIL):
+    target = slots or SLOT_DETAIL
+    out_imgs: dict[str, Image.Image] = {}
+    for slot in target:
+        i = SLOT_DETAIL.index(slot)
         detail = compose_detail(cutouts[i], background, job["metal"])
         out = preview_dir / ZIP_NAME[slot]
         detail.save(out, "JPEG", quality=90)
         upsert_asset(conn, job_id, slot, "preview", str(out))
-        detail_imgs.append(detail)
+        out_imgs[slot] = detail
         logger.info("job_id=%s stage=detail slot=%s", job_id, slot)
+    return out_imgs
 
-    # --- scene ---
-    set_stage(conn, job_id, "scene", "running")
 
+def run_scenes(
+    conn,
+    job_id: str,
+    job: dict,
+    scene_dir: Path,
+    slots: list[str],
+    *,
+    reuse_ref: bool,
+) -> dict[str, Image.Image]:
     def on_api_call() -> None:
         bump_api_call_count(conn, job_id, 1)
 
+    ref = scene_dir / "persona_ref.jpg" if reuse_ref else None
     scenes = generate_all_scenes(
         persona_name=job["persona_name"],
         persona_image_key=job.get("persona_image_key"),
         category=job["category"],
-        slots=SCENE_SLOTS,
+        slots=slots,
         tone_names=job["tone_names"],
         scene_dir=scene_dir,
         on_api_call=on_api_call,
+        reuse_reference_path=ref,
     )
-    ref_path = scene_dir / "persona_ref.jpg"
-    if ref_path.is_file():
-        upsert_asset(conn, job_id, "persona_ref", "persona_ref", str(ref_path))
-    for slot, scene in scenes.items():
-        out = scene_dir / f"{slot}.jpg"
-        scene.save(out, "JPEG", quality=90)
-        upsert_asset(conn, job_id, slot, "scene", str(out))
-        logger.info("job_id=%s stage=scene slot=%s", job_id, slot)
+    save_scene_slots(conn, job_id, scene_dir, scenes)
+    return scenes
 
-    # --- composite ---
-    set_stage(conn, job_id, "composite", "running")
-    composited: dict[str, Image.Image] = {}
-    for slot in WEAR_SLOTS:
-        wear_ts = transforms_from_face(
-            scenes[slot], get_anchors(job["category"], False), job["category"]
-        )
-        img = composite_on_scene(
-            scenes[slot], main_cut, job["category"], job["metal"], body=False, transforms=wear_ts
-        )
-        out = preview_dir / ZIP_NAME[slot]
-        img.save(out, "JPEG", quality=90)
-        upsert_asset(conn, job_id, slot, "preview", str(out), transform=wear_ts)
-        composited[slot] = img
-        logger.info("job_id=%s stage=composite slot=%s transform=%s", job_id, slot, wear_ts)
 
-    for slot in BODY_SLOTS:
-        body_ts = transforms_from_face(
-            scenes[slot], get_anchors(job["category"], True), job["category"]
-        )
-        img = composite_on_scene(
-            scenes[slot], main_cut, job["category"], job["metal"], body=True, transforms=body_ts
-        )
-        out = preview_dir / ZIP_NAME[slot]
-        img.save(out, "JPEG", quality=90)
-        upsert_asset(conn, job_id, slot, "preview", str(out), transform=body_ts)
-        composited[slot] = img
-        logger.info("job_id=%s stage=composite slot=%s transform=%s", job_id, slot, body_ts)
+def run_regen(conn, job_id: str, job: dict, slots: list[str], dirs: dict[str, Path]) -> None:
+    """Regenerate a subset of slots, keeping persona identity."""
+    cutout_dir = dirs["cutout"]
+    scene_dir = dirs["scene"]
+    preview_dir = dirs["preview"]
+    cutouts = load_cutouts_from_disk(cutout_dir)
+    main_cut = cutouts[min(job["mainIndex"], 2)]
 
-    # wide without inset first
-    wide_ts = transforms_from_face(
-        scenes["wide_inset"], get_anchors(job["category"], True), job["category"]
-    )
-    wide = composite_on_scene(
-        scenes["wide_inset"],
-        main_cut,
-        job["category"],
-        job["metal"],
-        body=True,
-        transforms=wide_ts,
-    )
+    details_needed = [s for s in slots if s in SLOT_DETAIL]
+    scene_needed = [s for s in slots if s in SCENE_SLOTS]
 
-    # --- inset ---
-    set_stage(conn, job_id, "inset", "running")
-    wide_final = add_inset(wide, detail_imgs[0])
-    out = preview_dir / ZIP_NAME["wide_inset"]
-    wide_final.save(out, "JPEG", quality=90)
-    upsert_asset(conn, job_id, "wide_inset", "preview", str(out), transform=wide_ts)
-    logger.info("job_id=%s stage=inset slot=wide_inset transform=%s", job_id, wide_ts)
+    if details_needed:
+        set_stage(conn, job_id, "detail", "running", error=None)
+        run_details(conn, job_id, job, cutouts, preview_dir, details_needed)
+
+    if scene_needed:
+        set_stage(conn, job_id, "scene", "running", error=None)
+        new_scenes = run_scenes(conn, job_id, job, scene_dir, scene_needed, reuse_ref=True)
+        set_stage(conn, job_id, "composite", "running")
+        wide_ts = None
+        wide_rgb = None
+        for slot in scene_needed:
+            scene = new_scenes[slot]
+            ts = composite_slot(conn, job_id, job, slot, scene, main_cut, preview_dir)
+            if slot == "wide_inset":
+                wide_ts = ts
+                wide_rgb = composite_on_scene(
+                    scene,
+                    main_cut,
+                    job["category"],
+                    job["metal"],
+                    body=True,
+                    transforms=ts,
+                )
+
+        if "wide_inset" in scene_needed and wide_rgb is not None and wide_ts is not None:
+            set_stage(conn, job_id, "inset", "running")
+            detail_imgs = {s: load_detail_image(preview_dir, s) for s in SLOT_DETAIL}
+            write_inset(conn, job_id, job, wide_rgb, wide_ts, preview_dir, detail_imgs)
+    elif details_needed and job.get("inset_slot") in details_needed:
+        set_stage(conn, job_id, "inset", "running")
+        scene = load_scene_image(scene_dir, "wide_inset")
+        ts = load_preview_transform(conn, job_id, "wide_inset") or transforms_from_face(
+            scene, get_anchors(job["category"], True), job["category"]
+        )
+        wide_rgb = composite_on_scene(
+            scene, main_cut, job["category"], job["metal"], body=True, transforms=ts
+        )
+        detail_imgs = {s: load_detail_image(preview_dir, s) for s in SLOT_DETAIL}
+        write_inset(conn, job_id, job, wide_rgb, ts, preview_dir, detail_imgs)
+
+    set_stage(conn, job_id, "ready", "ready", error=None)
+
+
+def run_job(
+    conn,
+    job_id: str,
+    *,
+    from_stage: str | None = None,
+    regen_slots: list[str] | None = None,
+) -> None:
+    t0 = time.time()
+    start = from_stage or "ingest"
+    if start == "ready":
+        start = "ingest"
+    logger.info("job_id=%s start from=%s regen=%s", job_id, start, regen_slots)
+    job = load_job(conn, job_id)
+    root = job_dir(job_id)
+    input_dir = root / "input"
+    cutout_dir = root / "cutout"
+    scene_dir = root / "scene"
+    preview_dir = root / "preview"
+    for d in (cutout_dir, scene_dir, preview_dir):
+        d.mkdir(parents=True, exist_ok=True)
+    dirs = {"cutout": cutout_dir, "scene": scene_dir, "preview": preview_dir}
+
+    if regen_slots:
+        run_regen(conn, job_id, job, regen_slots, dirs)
+        logger.info("job_id=%s regen ready in %.1fs", job_id, time.time() - t0)
+        return
+
+    skip_before = stage_rank(start)
+
+    inputs = sorted(input_dir.glob("product_*.jpg"))
+    if len(inputs) != 3:
+        raise RuntimeError(f"Expected 3 inputs, found {len(inputs)}")
+
+    if skip_before <= stage_rank("ingest"):
+        set_stage(conn, job_id, "ingest", "running", error=None)
+        logger.info("job_id=%s stage=ingest ok", job_id)
+
+    if skip_before <= stage_rank("cutout"):
+        set_stage(conn, job_id, "cutout", "running", error=None)
+        cutouts = run_cutouts(conn, job_id, inputs, cutout_dir)
+    else:
+        cutouts = load_cutouts_from_disk(cutout_dir)
+
+    main_cut = cutouts[min(job["mainIndex"], 2)]
+
+    if skip_before <= stage_rank("detail"):
+        set_stage(conn, job_id, "detail", "running")
+        detail_imgs = run_details(conn, job_id, job, cutouts, preview_dir)
+    else:
+        detail_imgs = {s: load_detail_image(preview_dir, s) for s in SLOT_DETAIL}
+
+    if skip_before <= stage_rank("scene"):
+        set_stage(conn, job_id, "scene", "running")
+        scenes = run_scenes(
+            conn,
+            job_id,
+            job,
+            scene_dir,
+            SCENE_SLOTS,
+            reuse_ref=(scene_dir / "persona_ref.jpg").is_file(),
+        )
+    else:
+        scenes = {s: load_scene_image(scene_dir, s) for s in SCENE_SLOTS}
+
+    if skip_before <= stage_rank("composite"):
+        set_stage(conn, job_id, "composite", "running")
+        for slot in WEAR_SLOTS:
+            composite_slot(conn, job_id, job, slot, scenes[slot], main_cut, preview_dir)
+        for slot in BODY_SLOTS:
+            composite_slot(conn, job_id, job, slot, scenes[slot], main_cut, preview_dir)
+        wide_ts = transforms_from_face(
+            scenes["wide_inset"], get_anchors(job["category"], True), job["category"]
+        )
+        wide = composite_on_scene(
+            scenes["wide_inset"],
+            main_cut,
+            job["category"],
+            job["metal"],
+            body=True,
+            transforms=wide_ts,
+        )
+    else:
+        wide_ts = load_preview_transform(conn, job_id, "wide_inset") or transforms_from_face(
+            scenes["wide_inset"], get_anchors(job["category"], True), job["category"]
+        )
+        wide = composite_on_scene(
+            scenes["wide_inset"],
+            main_cut,
+            job["category"],
+            job["metal"],
+            body=True,
+            transforms=wide_ts,
+        )
+
+    if skip_before <= stage_rank("inset"):
+        set_stage(conn, job_id, "inset", "running")
+        write_inset(conn, job_id, job, wide, wide_ts, preview_dir, detail_imgs)
 
     set_stage(conn, job_id, "ready", "ready", error=None)
     logger.info("job_id=%s ready in %.1fs", job_id, time.time() - t0)
@@ -535,16 +756,16 @@ def listen_forever() -> None:
         item = r.brpop(QUEUE_KEY, timeout=5)
         if not item:
             continue
-        _, job_id = item
+        _, raw = item
+        try:
+            job_id, from_stage, slots = parse_queue_item(raw)
+        except Exception:
+            logger.exception("invalid queue payload: %r", raw)
+            continue
         with db_connect() as conn:
-            stage = "ingest"
+            stage = from_stage or "ingest"
             try:
-                with conn.cursor() as cur:
-                    cur.execute('SELECT stage FROM "Job" WHERE id = %s', (job_id,))
-                    row = cur.fetchone()
-                    if row and row[0]:
-                        stage = row[0]
-                run_job(conn, job_id)
+                run_job(conn, job_id, from_stage=from_stage, regen_slots=slots)
             except Exception as e:
                 try:
                     with conn.cursor() as cur:

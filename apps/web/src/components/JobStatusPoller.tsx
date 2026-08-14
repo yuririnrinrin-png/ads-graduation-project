@@ -13,6 +13,7 @@ type Props = {
 export function JobStatusPoller({ jobId, initialStatus }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
+  const [stage, setStage] = useState<string | null>(null);
 
   useEffect(() => {
     setStatus(initialStatus);
@@ -28,10 +29,12 @@ export function JobStatusPoller({ jobId, initialStatus }: Props) {
         const res = await fetch(`/api/jobs/${jobId}`);
         if (!res.ok) return;
         const data = await res.json();
-        const next = data.job?.status as string | undefined;
-        if (!next || cancelled) return;
-        if (next !== status) {
-          setStatus(next);
+        const nextStatus = data.job?.status as string | undefined;
+        const nextStage = (data.job?.stage as string | undefined) ?? null;
+        if (!nextStatus || cancelled) return;
+        if (nextStatus !== status || nextStage !== stage) {
+          setStatus(nextStatus);
+          setStage(nextStage);
           router.refresh();
         }
       } catch {
@@ -44,7 +47,7 @@ export function JobStatusPoller({ jobId, initialStatus }: Props) {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [jobId, status, router]);
+  }, [jobId, status, stage, router]);
 
   return null;
 }

@@ -4,6 +4,7 @@ import {
   CATEGORY_LABELS,
   COMPOSITE_SLOTS,
   DEFAULT_TRANSFORM,
+  DETAIL_SLOTS,
   getAnchors,
   isBodySlot,
   JOB_STATUS_LABELS,
@@ -11,6 +12,7 @@ import {
   PROGRESS_STEPS,
   SLOT_KEYS,
   type Category,
+  type DetailSlot,
   type JobStatus,
   type PipelineStage,
   type SlotKey,
@@ -18,6 +20,7 @@ import {
 } from "@ti-amo/shared";
 import { DeleteJobButton } from "@/components/DeleteJobButton";
 import { JobStatusPoller } from "@/components/JobStatusPoller";
+import { RetryActions } from "@/components/RetryActions";
 import { SlotCardClient } from "@/components/SlotCardClient";
 import { prisma } from "@/lib/prisma";
 import { requirePageSession } from "@/lib/require-page-session";
@@ -61,9 +64,12 @@ function ReviewView({
     background: { name: string };
     category: string;
     metal: string;
+    insetSlot?: string;
+    updatedAt: Date;
   };
   transforms: Partial<Record<SlotKey, SlotTransform[]>>;
 }) {
+  const imageVersion = job.updatedAt.getTime();
   const details = SLOT_KEYS.slice(0, 3) as SlotKey[];
   const wears = SLOT_KEYS.slice(3, 7) as SlotKey[];
   const bodies = SLOT_KEYS.slice(7, 10) as SlotKey[];
@@ -91,7 +97,7 @@ function ReviewView({
           {job.persona.name} · {job.background.name}
           <span className="faint">
             {" "}
-            · 着用系は大きさ・位置を調整可。人物シーンはローカル仮生成（本番APIは後続）
+            · ダメな枠は再生成。着用系はドラッグで大きさ・位置を調整
           </span>
         </p>
 
@@ -99,7 +105,7 @@ function ReviewView({
           <h3 className="review-group-title">Detail · AI人物なし · 01–03</h3>
           <div className="slot-grid-3">
             {details.map((slot) => (
-              <SlotCardClient key={slot} jobId={job.id} slot={slot} />
+              <SlotCardClient key={slot} jobId={job.id} slot={slot} imageVersion={imageVersion} />
             ))}
           </div>
         </div>
@@ -116,6 +122,7 @@ function ReviewView({
                 initialTransforms={transforms[slot]}
                 category={job.category as Category}
                 body={false}
+                imageVersion={imageVersion}
               />
             ))}
           </div>
@@ -133,6 +140,12 @@ function ReviewView({
                 initialTransforms={transforms[slot]}
                 category={job.category as Category}
                 body
+                imageVersion={imageVersion}
+                insetSlot={
+                  (DETAIL_SLOTS as readonly string[]).includes(job.insetSlot ?? "")
+                    ? (job.insetSlot as DetailSlot)
+                    : "detail_a"
+                }
               />
             ))}
           </div>
@@ -223,20 +236,7 @@ function ProgressView({
           })}
         </ol>
 
-        {failed ? (
-          <div className="row" style={{ marginTop: "2.5rem", justifyContent: "center" }}>
-            <Link className="btn btn-ghost" href="/jobs/new">
-              最初から（新規ジョブ）
-            </Link>
-            <span
-              className="btn btn-primary"
-              style={{ opacity: 0.55, cursor: "not-allowed" }}
-              title="Phase 4"
-            >
-              失敗した段階からリトライ
-            </span>
-          </div>
-        ) : null}
+        {failed ? <RetryActions jobId={job.id} /> : null}
       </div>
     </div>
   );
@@ -280,7 +280,10 @@ export default async function JobDetailPage({ params }: Props) {
       </div>
 
       {job.status === "ready" ? (
-        <ReviewView job={job} transforms={transforms} />
+        <ReviewView
+          job={job}
+          transforms={transforms}
+        />
       ) : (
         <ProgressView job={job} failed={job.status === "failed"} />
       )}

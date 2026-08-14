@@ -1,8 +1,11 @@
-# Ti amo Jewelry Studio — Python worker (Phase 2–3)
+# Ti amo Jewelry Studio — Python worker (Phase 2–4)
 
 Redis キュー `tiamo:jobs` を待ち、1ジョブずつ:
 
 `ingest → cutout → detail → scene → composite → inset → ready`
+
+キューの中身はジョブ ID、または JSON `{"jobId":"...","fromStage":"scene","slots":["wear_office"]}`。
+`fromStage` はその段階から再開。`slots` があるときはその枠だけ再生成する。
 
 ## 前提
 
@@ -34,7 +37,7 @@ python -m worker.pipeline run <jobId>
 | cutout / detail | 淡色背景マット＋背景・地金（Phase 2） |
 | scene | 人物シーン7枚。`FAL_KEY` あり → Flux で参照顔＋PuLID で同一人物7枚。なし → ローカル仮 |
 | composite | メイン切り抜きをカテゴリ別アンカーに合成。ネックレス／ピアスは顔の位置で初期 transform を枠ごとに保存 |
-| inset | 引きにディテールAを右下インセット |
+| inset | 引きに選んだディテール（`Job.insetSlot`、初期は A）を右下インセット |
 
 - アンカーはカテゴリごとに1〜2点（ピアスのみ左右2点）。ピアスは1個の切り抜きを
   鏡写しして両耳に合成し、`transform` はアンカー数と同じ長さの配列で保存する

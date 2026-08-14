@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import {
   CANVAS_SIZE,
   DEFAULT_TRANSFORM,
+  DETAIL_SLOTS,
   TRANSFORM_OFFSET_LIMIT,
   getAnchors,
   SLOT_BADGES,
   SLOT_LABELS,
   type Category,
+  type DetailSlot,
   type SlotKey,
   type SlotTransform,
 } from "@ti-amo/shared";
@@ -23,6 +25,9 @@ type Props = {
   /** Needed only when adjustable=true, to pick anchor points for the drag overlay. */
   category?: Category;
   body?: boolean;
+  insetSlot?: DetailSlot;
+  /** Changes after regen so the browser does not keep the old JPEG. */
+  imageVersion?: number;
 };
 
 const MIN_SCALE = 0.4;
@@ -52,6 +57,8 @@ export function SlotCardClient({
   adjustable = false,
   category,
   body = false,
+  insetSlot,
+  imageVersion = 0,
 }: Props) {
   const router = useRouter();
   const anchors = category ? getAnchors(category, body) : getAnchors("bracelet", body);
@@ -61,6 +68,7 @@ export function SlotCardClient({
   );
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [bust, setBust] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
@@ -140,20 +148,88 @@ export function SlotCardClient({
     void commit(next);
   }
 
+  async function regen() {
+    setPending(true);
+    const res = await fetch(`/api/jobs/${jobId}/slots/${slot}/regen`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    setPending(false);
+    setConfirming(false);
+    if (!res.ok) {
+      window.alert(data.error ?? "再生成に失敗しました");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function changeInset(next: DetailSlot) {
+    if (next === insetSlot) return;
+    setPending(true);
+    const res = await fetch(`/api/jobs/${jobId}/inset`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ insetSlot: next }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setPending(false);
+    if (!res.ok) {
+      window.alert(data.error ?? "インセットの更新に失敗しました");
+      return;
+    }
+    router.refresh();
+  }
+
   if (!adjustable || !editing) {
     return (
       <div>
         <div className="slot-thumb">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/api/jobs/${jobId}/preview/${slot}?v=${bust}`} alt={SLOT_LABELS[slot]} />
+          <img src={`/api/jobs/${jobId}/preview/${slot}?v=${imageVersion}-${bust}`} alt={SLOT_LABELS[slot]} />
           <span className="slot-badge">{SLOT_BADGES[slot]}</span>
         </div>
         <div className="slot-card-meta">
           <span>{SLOT_LABELS[slot]}</span>
-          <button type="button" className="btn-regen" disabled title="Phase 4">
-            再生成
-          </button>
+          {confirming ? (
+            <span className="regen-confirm">
+              <button type="button" className="btn-regen" disabled={pending} onClick={() => void regen()}>
+                {pending ? "受付中…" : "する"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ fontSize: "0.7rem", padding: "0.2rem 0.45rem" }}
+                disabled={pending}
+                onClick={() => setConfirming(false)}
+              >
+                やめる
+              </button>
+            </span>
+          ) : (
+            <button type="button" className="btn-regen" disabled={pending} onClick={() => setConfirming(true)}>
+              再生成
+            </button>
+          )}
         </div>
+        {confirming ? (
+          <p className="faint" style={{ margin: "0.35rem 0 0", fontSize: "0.7rem" }}>
+            {SLOT_LABELS[slot]} を再生成しますか？人物は同じプリセットのままです。
+          </p>
+        ) : null}
+        {slot === "wide_inset" ? (
+          <label className="inset-pick">
+            インセット元
+            <select
+              value={insetSlot ?? "detail_a"}
+              disabled={pending}
+              onChange={(e) => void changeInset(e.target.value as DetailSlot)}
+            >
+              {DETAIL_SLOTS.map((key) => (
+                <option key={key} value={key}>
+                  {SLOT_LABELS[key]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         {adjustable ? (
           <button
             type="button"
@@ -181,7 +257,7 @@ export function SlotCardClient({
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/api/jobs/${jobId}/scene/${slot}`}
+          src={`/api/jobs/${jobId}/scene/${slot}?v=${imageVersion}`}
           alt=""
           className="edit-canvas-bg"
           draggable={false}

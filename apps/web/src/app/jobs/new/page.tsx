@@ -6,8 +6,11 @@ import {
   CATEGORIES,
   CATEGORY_LABELS,
   CATEGORY_WEAR_HINTS,
+  DETAIL_SLOTS,
   METALS,
+  SLOT_LABELS,
   type Category,
+  type DetailSlot,
   type Metal,
 } from "@ti-amo/shared";
 
@@ -27,6 +30,7 @@ export default function NewJobPage() {
   const [personaId, setPersonaId] = useState("");
   const [backgroundId, setBackgroundId] = useState("");
   const [toneIds, setToneIds] = useState<string[]>([]);
+  const [insetSlot, setInsetSlot] = useState<DetailSlot>("detail_a");
   const [mainIndex, setMainIndex] = useState(0);
   const [images, setImages] = useState<(File | null)[]>([null, null, null]);
   const [previews, setPreviews] = useState<(string | null)[]>([null, null, null]);
@@ -118,6 +122,7 @@ export default function NewJobPage() {
     fd.set("personaId", personaId);
     fd.set("backgroundId", backgroundId);
     fd.set("toneIds", JSON.stringify(toneIds));
+    fd.set("insetSlot", insetSlot);
     images.forEach((file, i) => {
       if (file) fd.set(`image${i}`, file);
     });
@@ -149,10 +154,10 @@ export default function NewJobPage() {
             <span className="brand" style={{ fontSize: "1.25rem" }}>
               Ti amo Jewelry Studio
             </span>
-            <span className="pill-tag">PHASE 2</span>
+            <span className="pill-tag">PHASE 4</span>
           </div>
           <span className="faint" style={{ fontSize: "0.75rem" }}>
-            商品3枚 → 切り抜き → ディテール3枚
+            商品3枚 → 10枚生成 → レビューで直す
           </span>
         </div>
 
@@ -356,6 +361,25 @@ export default function NewJobPage() {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            <div className="field">
+              <p className="field-label" id="label-inset">
+                インセットに使うディテール（任意・あとから変更可）
+              </p>
+              <div className="row" role="group" aria-labelledby="label-inset">
+                {DETAIL_SLOTS.map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className="chip"
+                    aria-pressed={insetSlot === key}
+                    onClick={() => setInsetSlot(key)}
+                  >
+                    {SLOT_LABELS[key]}
+                  </button>
+                ))}
               </div>
             </div>
 
