@@ -4,6 +4,7 @@ import path from "path";
 import {
   COMPOSITE_SLOTS,
   TRANSFORM_OFFSET_LIMIT,
+  TRANSFORM_ROTATE_LIMIT,
   defaultTransforms,
   getAnchors,
   isBodySlot,
@@ -22,6 +23,7 @@ const transformItemSchema = z.object({
   scale: z.number().min(0.3).max(2.5),
   offsetX: z.number().min(-TRANSFORM_OFFSET_LIMIT).max(TRANSFORM_OFFSET_LIMIT),
   offsetY: z.number().min(-TRANSFORM_OFFSET_LIMIT).max(TRANSFORM_OFFSET_LIMIT),
+  rotate: z.number().min(-TRANSFORM_ROTATE_LIMIT).max(TRANSFORM_ROTATE_LIMIT).optional().default(0),
 });
 
 const bodySchema = z.object({
@@ -72,6 +74,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const preview = await prisma.jobAsset.findFirst({
     where: { jobId: id, slotKey: slot, kind: "preview" },
   });
+  const hairOverlay = await prisma.jobAsset.findFirst({
+    where: { jobId: id, slotKey: slot, kind: "hair_overlay" },
+  });
   if (!scene || !cutout || !preview) {
     return NextResponse.json({ error: "Missing scene/cutout/preview" }, { status: 400 });
   }
@@ -81,8 +86,9 @@ export async function PATCH(req: Request, ctx: Ctx) {
 
   let insetPath: string | undefined;
   if (slot === "wide_inset") {
+    const insetKey = job.insetSlot || "detail_a";
     const detail = await prisma.jobAsset.findFirst({
-      where: { jobId: id, slotKey: "detail_a", kind: "preview" },
+      where: { jobId: id, slotKey: insetKey, kind: "preview" },
     });
     insetPath = detail?.storageKey;
   }
@@ -97,6 +103,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
       body,
       transforms,
       insetPath,
+      hairOverlayPath: hairOverlay?.storageKey,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Recomposite failed";

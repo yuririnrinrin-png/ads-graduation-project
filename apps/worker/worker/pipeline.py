@@ -22,6 +22,7 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from redis import Redis
 
 from worker.face_anchor import transforms_from_face
+from worker.hair_mask import HAIR_OVERLAY_SLOTS, build_hair_overlay
 from worker.scene_gen import generate_all_scenes
 
 logging.basicConfig(
@@ -276,6 +277,11 @@ def cutout_light_bg(src: Image.Image, threshold: int = 235) -> Image.Image:
     return Image.fromarray(rgba, "RGBA")
 
 
+# Keep this faint — a heavy shadow reads as a color shift on the metal.
+SCENE_SHADOW_BLUR = 12
+SCENE_SHADOW_OPACITY = 48
+
+
 def apply_metal_tint(img: Image.Image, metal: str) -> Image.Image:
     factors = METAL_TINT.get(metal, (1.0, 1.0, 1.0))
     r, g, b, a = img.split()
@@ -301,9 +307,72 @@ def make_shadow_layer(rgba: Image.Image, *, blur: int, opacity: int) -> tuple[Im
     pad = blur * 2
     padded_alpha = Image.new("L", (alpha.width + pad * 2, alpha.height + pad * 2), 0)
     padded_alpha.paste(alpha, (pad, pad))
-    dark = Image.new("RGBA", padded_alpha.size, (12, 10, 8, 0))
+    dark = Image.new("RGBA", padded_alpha.size, (40, 34, 28, 0))
     dark.putalpha(padded_alpha.point(lambda v: int(v * opacity / 255)))
     return dark.filter(ImageFilter.GaussianBlur(blur)), pad
+
+
+def match_jewel_to_scene(
+    jewel: Image.Image,
+    scene_rgb: np.ndarray,
+    cx: int,
+    cy: int,
+) -> Image.Image:
+    """Nudge cutout brightness slightly toward the scene. Do not restain
+    the metal — the uploaded cutout color is the source of truth."""
+    arr = np.array(jewel.convert("RGBA"))
+    alpha = arr[:, :, 3]
+    rgb = arr[:, :, :3].astype(np.float32)
+    opaque = alpha > 32
+    if int(opaque.sum()) < 50:
+        return jewel
+
+    j_mean = rgb[opaque].mean(axis=0)
+    h, w = scene_rgb.shape[:2]
+    radius = max(24, max(jewel.size) // 3)
+    y0, y1 = max(0, cy - radius), min(h, cy + radius)
+    x0, x1 = max(0, cx - radius), min(w, cx + radius)
+    patch = scene_rgb[y0:y1, x0:x1].astype(np.float32)
+    if patch.size == 0:
+        return jewel
+    s_mean = patch.mean(axis=(0, 1))
+
+    j_y = 0.299 * j_mean[0] + 0.587 * j_mean[1] + 0.114 * j_mean[2]
+    s_y = 0.299 * s_mean[0] + 0.587 * s_mean[1] + 0.114 * s_mean[2]
+    scale = 1.0 if j_y < 8 else float(np.clip(s_y / j_y, 0.94, 1.06))
+    mixed = rgb * scale
+    arr[:, :, :3] = np.clip(mixed, 0, 255).astype(np.uint8)
+    return Image.fromarray(arr, "RGBA")
+
+
+def prepare_hair_overlay(conn, job_id: str, slot: str, scene: Image.Image) -> Image.Image | None:
+    out = job_dir(job_id) / "scene" / f"hair_{slot}.png"
+    if slot not in HAIR_OVERLAY_SLOTS:
+        return None
+    overlay = build_hair_overlay(scene)
+    if overlay is None:
+        if out.is_file():
+            out.unlink()
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                DELETE FROM "JobAsset"
+                WHERE "jobId" = %s AND "slotKey" = %s AND kind = 'hair_overlay'
+                """,
+                (job_id, slot),
+            )
+        conn.commit()
+        return None
+    overlay.save(out, "PNG")
+    upsert_asset(conn, job_id, slot, "hair_overlay", str(out))
+    return overlay
+
+
+def load_hair_overlay(job_id: str, slot: str) -> Image.Image | None:
+    path = job_dir(job_id) / "scene" / f"hair_{slot}.png"
+    if not path.is_file():
+        return None
+    return Image.open(path).convert("RGBA")
 
 
 def compose_detail(cutout: Image.Image, background: Image.Image, metal: str) -> Image.Image:
@@ -321,7 +390,7 @@ def compose_detail(cutout: Image.Image, background: Image.Image, metal: str) -> 
 
 
 def default_transform() -> dict:
-    return {"scale": 1.0, "offsetX": 0, "offsetY": 0}
+    return {"scale": 1.0, "offsetX": 0, "offsetY": 0, "rotate": 0}
 
 
 def default_transforms(count: int) -> list[dict]:
@@ -341,11 +410,13 @@ def composite_on_scene(
     *,
     body: bool,
     transforms: list[dict] | None = None,
+    hair_overlay: Image.Image | None = None,
 ) -> Image.Image:
     anchors = get_anchors(category, body)
     ts = transforms if transforms is not None else default_transforms(len(anchors))
     tinted = apply_metal_tint(cutout, metal)
     canvas = scene.convert("RGBA")
+    scene_rgb = np.array(scene.convert("RGB"))
 
     # Earrings: same cutout mirrored onto both ear anchors, each with its own
     # transform so left/right can be sized/placed independently.
@@ -358,20 +429,27 @@ def composite_on_scene(
         # Fixed baseline tilt (not a 3D perspective fix, see Anchor docstring
         # in packages/shared/src/index.ts) so a straight cutout doesn't look
         # perfectly flat/pasted on a neck or ear that is rarely upright.
-        rotate = anchor.get("rotate", 0)
+        rotate = float(anchor.get("rotate") or 0) + float(t.get("rotate") or 0)
         if rotate:
-            # anchor["rotate"] is degrees clockwise (matches sharp's
-            # convention on the web side); Pillow's rotate() is
-            # counter-clockwise for positive angles, so negate here.
+            # Positive degrees are clockwise (matches sharp on the web side);
+            # Pillow's rotate() is counter-clockwise, so negate here.
             fitted = fitted.rotate(-rotate, resample=Image.BICUBIC, expand=True)
         cx = int(SIZE * anchor["x"] + float(t.get("offsetX", 0)))
         cy = int(SIZE * anchor["y"] + float(t.get("offsetY", 0)))
+        fitted = match_jewel_to_scene(fitted, scene_rgb, cx, cy)
         x = cx - fitted.width // 2
         y = cy - fitted.height // 2
-        shadow, pad = make_shadow_layer(fitted, blur=16, opacity=95)
-        shadow_offset = max(6, int(fitted.width * 0.03))
+        shadow, pad = make_shadow_layer(
+            fitted, blur=SCENE_SHADOW_BLUR, opacity=SCENE_SHADOW_OPACITY
+        )
+        shadow_offset = max(5, int(fitted.width * 0.025))
         canvas.alpha_composite(shadow, (x - pad, y - pad + shadow_offset))
         canvas.alpha_composite(fitted, (x, y))
+    if hair_overlay is not None:
+        overlay = hair_overlay.convert("RGBA")
+        if overlay.size != canvas.size:
+            overlay = overlay.resize(canvas.size, Image.Resampling.BILINEAR)
+        canvas.alpha_composite(overlay)
     return canvas.convert("RGB")
 
 
@@ -485,8 +563,15 @@ def composite_slot(
         ts = load_preview_transform(conn, job_id, slot)
     if ts is None:
         ts = transforms_from_face(scene, get_anchors(job["category"], body), job["category"])
+    overlay = prepare_hair_overlay(conn, job_id, slot, scene)
     img = composite_on_scene(
-        scene, main_cut, job["category"], job["metal"], body=body, transforms=ts
+        scene,
+        main_cut,
+        job["category"],
+        job["metal"],
+        body=body,
+        transforms=ts,
+        hair_overlay=overlay,
     )
     if slot != "wide_inset":
         out = preview_dir / ZIP_NAME[slot]
@@ -615,6 +700,7 @@ def run_regen(conn, job_id: str, job: dict, slots: list[str], dirs: dict[str, Pa
                     job["metal"],
                     body=True,
                     transforms=ts,
+                    hair_overlay=load_hair_overlay(job_id, slot),
                 )
 
         if "wide_inset" in scene_needed and wide_rgb is not None and wide_ts is not None:
@@ -627,8 +713,15 @@ def run_regen(conn, job_id: str, job: dict, slots: list[str], dirs: dict[str, Pa
         ts = load_preview_transform(conn, job_id, "wide_inset") or transforms_from_face(
             scene, get_anchors(job["category"], True), job["category"]
         )
+        overlay = prepare_hair_overlay(conn, job_id, "wide_inset", scene)
         wide_rgb = composite_on_scene(
-            scene, main_cut, job["category"], job["metal"], body=True, transforms=ts
+            scene,
+            main_cut,
+            job["category"],
+            job["metal"],
+            body=True,
+            transforms=ts,
+            hair_overlay=overlay,
         )
         detail_imgs = {s: load_detail_image(preview_dir, s) for s in SLOT_DETAIL}
         write_inset(conn, job_id, job, wide_rgb, ts, preview_dir, detail_imgs)
@@ -709,6 +802,7 @@ def run_job(
         wide_ts = transforms_from_face(
             scenes["wide_inset"], get_anchors(job["category"], True), job["category"]
         )
+        wide_overlay = prepare_hair_overlay(conn, job_id, "wide_inset", scenes["wide_inset"])
         wide = composite_on_scene(
             scenes["wide_inset"],
             main_cut,
@@ -716,6 +810,7 @@ def run_job(
             job["metal"],
             body=True,
             transforms=wide_ts,
+            hair_overlay=wide_overlay,
         )
     else:
         wide_ts = load_preview_transform(conn, job_id, "wide_inset") or transforms_from_face(
@@ -728,6 +823,7 @@ def run_job(
             job["metal"],
             body=True,
             transforms=wide_ts,
+            hair_overlay=load_hair_overlay(job_id, "wide_inset"),
         )
 
     if skip_before <= stage_rank("inset"):

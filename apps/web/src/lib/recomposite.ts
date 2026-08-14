@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import sharp from "sharp";
 import {
   CANVAS_SIZE,
@@ -11,6 +12,10 @@ import {
 export { isBodySlot } from "@ti-amo/shared";
 
 const SIZE = CANVAS_SIZE;
+
+/** Must match apps/worker/worker/pipeline.py SCENE_SHADOW_* . */
+const SCENE_SHADOW_BLUR = 12;
+const SCENE_SHADOW_OPACITY = 48;
 
 const METAL_MODULATION: Record<string, { brightness: number; saturation: number; hue: number }> = {
   YG: { brightness: 1.05, saturation: 1.15, hue: 15 },
@@ -52,7 +57,7 @@ async function makeShadowLayer(
       width: info.width,
       height: info.height,
       channels: 3,
-      background: { r: 12, g: 10, b: 8 },
+      background: { r: 40, g: 34, b: 28 },
     },
   })
     .joinChannel(data, {
@@ -63,6 +68,75 @@ async function makeShadowLayer(
     .toBuffer();
 
   return { buf, pad };
+}
+
+async function matchJewelToScene(
+  jewelBuf: Buffer,
+  scenePath: string,
+  cx: number,
+  cy: number,
+  jewelW: number,
+  jewelH: number
+): Promise<Buffer> {
+  const radius = Math.max(24, Math.round(Math.max(jewelW, jewelH) / 3));
+  const left = Math.max(0, cx - radius);
+  const top = Math.max(0, cy - radius);
+  const width = Math.min(SIZE - left, radius * 2);
+  const height = Math.min(SIZE - top, radius * 2);
+  if (width < 4 || height < 4) return jewelBuf;
+
+  const patch = await sharp(scenePath)
+    .extract({ left, top, width, height })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const pc = patch.info.channels;
+  let sR = 0;
+  let sG = 0;
+  let sB = 0;
+  const pCount = patch.info.width * patch.info.height;
+  for (let i = 0; i < patch.data.length; i += pc) {
+    sR += patch.data[i];
+    sG += patch.data[i + 1];
+    sB += patch.data[i + 2];
+  }
+  sR /= pCount;
+  sG /= pCount;
+  sB /= pCount;
+  const sY = 0.299 * sR + 0.587 * sG + 0.114 * sB;
+
+  const jewel = await sharp(jewelBuf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { data, info } = jewel;
+  let jR = 0;
+  let jG = 0;
+  let jB = 0;
+  let n = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] <= 32) continue;
+    jR += data[i];
+    jG += data[i + 1];
+    jB += data[i + 2];
+    n += 1;
+  }
+  if (n < 50) return jewelBuf;
+  jR /= n;
+  jG /= n;
+  jB /= n;
+  const jY = 0.299 * jR + 0.587 * jG + 0.114 * jB;
+  const scale = jY < 8 ? 1 : Math.min(1.06, Math.max(0.94, sY / jY));
+
+  const out = Buffer.from(data);
+  for (let i = 0; i < out.length; i += 4) {
+    if (out[i + 3] <= 32) continue;
+    out[i] = Math.max(0, Math.min(255, Math.round(out[i] * scale)));
+    out[i + 1] = Math.max(0, Math.min(255, Math.round(out[i + 1] * scale)));
+    out[i + 2] = Math.max(0, Math.min(255, Math.round(out[i + 2] * scale)));
+  }
+
+  return sharp(out, {
+    raw: { width: info.width, height: info.height, channels: 4 },
+  })
+    .png()
+    .toBuffer();
 }
 
 export async function recompositeSlot(opts: {
@@ -76,6 +150,8 @@ export async function recompositeSlot(opts: {
   transforms?: SlotTransform[];
   /** Optional detail image for wide_inset corner. */
   insetPath?: string;
+  /** Optional hair overlay (tucked-down slots) composited above jewelry. */
+  hairOverlayPath?: string;
 }): Promise<void> {
   const anchors = getAnchors(opts.category, opts.body);
 
@@ -101,14 +177,22 @@ export async function recompositeSlot(opts: {
     // Fixed baseline tilt (not a 3D perspective fix, see Anchor docstring in
     // packages/shared/src/index.ts) so a straight cutout doesn't look
     // perfectly flat/pasted on a neck or ear that is rarely upright.
-    const rotate = anchor.rotate ?? 0;
+    const rotate = (anchor.rotate ?? 0) + (t.rotate ?? 0);
     if (rotate) {
       jewelPipeline = jewelPipeline.rotate(rotate, {
         background: { r: 0, g: 0, b: 0, alpha: 0 },
       });
     }
     const jewelBuf = await jewelPipeline.png().toBuffer();
-    const meta = await sharp(jewelBuf).metadata();
+    const matchedBuf = await matchJewelToScene(
+      jewelBuf,
+      opts.scenePath,
+      Math.round(SIZE * anchor.x + t.offsetX),
+      Math.round(SIZE * anchor.y + t.offsetY),
+      jewelW,
+      jewelW
+    );
+    const meta = await sharp(matchedBuf).metadata();
     const jw = meta.width ?? jewelW;
     const jh = meta.height ?? jewelW;
     const cx = Math.round(SIZE * anchor.x + t.offsetX);
@@ -117,20 +201,28 @@ export async function recompositeSlot(opts: {
     const top = Math.max(0, cy - Math.floor(jh / 2));
 
     // Matches apps/worker/worker/pipeline.py composite_on_scene exactly.
-    const { buf: shadowBuf, pad } = await makeShadowLayer(jewelBuf, {
-      blur: 16,
-      opacity: 95,
+    const { buf: shadowBuf, pad } = await makeShadowLayer(matchedBuf, {
+      blur: SCENE_SHADOW_BLUR,
+      opacity: SCENE_SHADOW_OPACITY,
     });
-    const shadowOffset = Math.max(6, Math.round(jw * 0.03));
+    const shadowOffset = Math.max(5, Math.round(jw * 0.025));
     composites.push({
       input: shadowBuf,
       left: Math.max(0, left - pad),
       top: Math.max(0, top - pad + shadowOffset),
     });
     composites.push({
-      input: jewelBuf,
+      input: matchedBuf,
       left,
       top,
+    });
+  }
+
+  if (opts.hairOverlayPath && fs.existsSync(opts.hairOverlayPath)) {
+    composites.push({
+      input: opts.hairOverlayPath,
+      left: 0,
+      top: 0,
     });
   }
 

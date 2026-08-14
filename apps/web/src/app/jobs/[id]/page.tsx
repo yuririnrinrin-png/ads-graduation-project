@@ -41,6 +41,7 @@ function asTransform(value: unknown): SlotTransform {
     scale: typeof v.scale === "number" ? v.scale : 1,
     offsetX: typeof v.offsetX === "number" ? v.offsetX : 0,
     offsetY: typeof v.offsetY === "number" ? v.offsetY : 0,
+    rotate: typeof v.rotate === "number" ? v.rotate : 0,
   };
 }
 
@@ -97,7 +98,7 @@ function ReviewView({
           {job.persona.name} · {job.background.name}
           <span className="faint">
             {" "}
-            · ダメな枠は再生成。着用系はドラッグで大きさ・位置を調整
+            · ダメな枠は再生成。着用系はドラッグで大きさ・位置、スライダーで回転
           </span>
         </p>
 

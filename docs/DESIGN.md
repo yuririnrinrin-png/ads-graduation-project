@@ -115,7 +115,7 @@ UI 契約:
 
 - 10 枠を役割ラベル付きで表示
 - 各枠: 再生成はボタン形状。実行前に軽い確認
-- 着用系は画像上でドラッグして大きさ・位置を調整（人物は再生成しない）。角度の自動補正はしない
+- 着用系は画像上でドラッグして大きさ・位置を調整し、スライダーで回転できる（人物は再生成しない）。3D的な自動補正はしない
 - インセット枠: ディテール選択の組み直し
 - ZIP ダウンロード
 
@@ -156,8 +156,8 @@ flowchart TD
 | 1 Ingest | 正規化。メタデータ保存（category, metal, personaId, backgroundId, toneIds, mainIndex） |
 | 2 Cutout | 3 枚切り抜き。失敗したらジョブ失敗（続行しない） |
 | 3 Detail ×3 | 背景プリセット＋地金色調整。AI 人物なし |
-| 4 Scene ×7 | 着用 4＋全身 2＋引き 1。同一 persona。ジュエリーは描かせない。**人物のみのシーン画像を中間成果物として保存** |
-| 5 Composite | 実物切り抜きをカテゴリ別アンカーに配置。ネックレス／ピアスはシーンごとに顔の矩形（YuNet）から初期 transform を計算して保存（検出失敗時はゼロ＝固定アンカー）。transform 反映可。中間の人物シーンを再利用 |
+| 4 Scene ×7 | 着用 4＋全身 2＋引き 1。同一 persona。ジュエリーは描かせない。顔は正面±15°、首・耳が見える髪型（カフェと引きのみ耳かけダウン）。**人物のみのシーン画像を中間成果物として保存** |
+| 5 Composite | 実物切り抜きをカテゴリ別アンカーに配置。明るさ・色温度合わせ＋接触影＋肌色の軽い乗算。カフェ／引きは髪オーバーレイ（取れたとき）。ネックレス／ピアスは顔矩形から初期 transform。transform 反映可 |
 | 6 Inset | 引き＋右下ディテール |
 | 7 Ready | プレビュー URL。ZIP は**ダウンロード時**に打包 |
 
@@ -179,8 +179,8 @@ flowchart TD
 方針（スパイク反映・2026-08-12）: **PuLID on Flux**（`fal-ai/flux-pulid`）。
 
 1. `PresetPersona.imageKey`（参照写真の URL / ローカルパス）があればそれを顔 ID に使う  
-2. 無ければ `fal-ai/flux/dev` で人物ポートレートを1枚生成して参照にする  
-3. 着用・全身・引きの7枚はすべて同じ参照で PuLID 生成（プロンプトでジュエリー禁止）
+2. 無ければ `fal-ai/flux/dev` で人物ポートレートを1枚生成して参照にする（首・耳が見える正面向き）  
+3. 着用・全身・引きの7枚はすべて同じ参照で PuLID 生成（プロンプトでジュエリー禁止。顔は正面±15°）
 
 実装: `apps/worker/worker/scene_gen.py`。ベンダー最終確定とコスト上限の具体値は [REQUIREMENTS.md](REQUIREMENTS.md) 未決に残す。
 
@@ -190,7 +190,7 @@ Postgres:
 
 - `PresetPersona` / `PresetBackground` / `PresetTone`
 - `Job`: status, inputs, options, stage, error, timestamps, apiCallCount 等
-- `JobAsset`: slotKey, storageKey, kind（input / cutout / scene / preview 等）, transform JSON
+- `JobAsset`: slotKey, storageKey, kind（input / cutout / scene / preview / hair_overlay 等）, transform JSON
 
 スロットキー例: `detail_a|b|c`, `wear_office|cafe|date|holiday`, `body_1|body_2`, `wide_inset`
 
@@ -248,3 +248,5 @@ docs/              # 要件・設計・モック（本書含む）
 | 2026-08-13 | Phase 3: ネックレス/ピアスの初期配置を顔矩形（OpenCV YuNet）でずらす。オフセットは `JobAsset.transform` に保存するため Web 再合成は変更不要。ドラッグ上限を 1000px に拡張 |
 | 2026-08-14 | Phase 4: 失敗段階からのリトライ、枠の再生成（人物維持）、インセット元の選び直し。`Job.insetSlot` |
 | 2026-08-14 | 枠再生成が同一画像になる問題: PuLID にランダム seed。preview/scene を no-store。進捗ポーリングが stage でも更新 |
+| 2026-08-14 | 着用の自然さ: 人物プロンプトを正面±15°・ジュエリー向け髪型に変更。合成は明るさ合わせ・影強化・肌色乗算・耳かけ2枠の髪オーバーレイ |
+| 2026-08-14 | 検証フィードバック: ダウン髪（カフェ/引き）強化、表情7種の差を明確化、影を薄くして原本色に寄せる、レビューで手動回転 |

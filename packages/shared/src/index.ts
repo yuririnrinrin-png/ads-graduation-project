@@ -147,12 +147,15 @@ export type SlotTransform = {
   scale: number;
   offsetX: number;
   offsetY: number;
+  /** Extra clockwise degrees on top of the category anchor's baseline tilt. */
+  rotate: number;
 };
 
 export const DEFAULT_TRANSFORM: SlotTransform = {
   scale: 1,
   offsetX: 0,
   offsetY: 0,
+  rotate: 0,
 };
 
 /**
@@ -163,13 +166,13 @@ export const DEFAULT_TRANSFORM: SlotTransform = {
  */
 export const TRANSFORM_OFFSET_LIMIT = 1000;
 
+/** Max |user rotate| in degrees (added to the category's fixed baseline tilt). */
+export const TRANSFORM_ROTATE_LIMIT = 45;
+
 /**
- * `rotate` (degrees, clockwise) is an optional fixed baseline tilt applied at
- * composite time — NOT a per-shot 3D perspective correction, and not
- * user-adjustable via drag (REQUIREMENTS.md §5/§8 still rule out real
- * perspective auto-correction / AI-drawn jewelry). It only exists to break
- * up the perfectly flat/"pasted on" look of a straight cutout sitting on a
- * neck/ear that is rarely perfectly upright. Defaults to 0 when omitted.
+ * `rotate` on Anchor (degrees, clockwise) is a small fixed baseline tilt
+ * applied at composite time. The reviewer can add more via SlotTransform.rotate.
+ * Still not a 3D perspective correction or AI-drawn jewelry.
  */
 export type Anchor = { x: number; y: number; scale: number; rotate?: number };
 
@@ -216,6 +219,13 @@ export const COMPOSITE_SLOTS = [
   "body_2",
   "wide_inset",
 ] as const;
+
+/** Tucked-down slots: hair pixels composited on top of jewelry when a mask exists. */
+export const HAIR_OVERLAY_SLOTS = ["wear_cafe", "wide_inset"] as const;
+
+export function usesHairOverlay(slot: string): boolean {
+  return (HAIR_OVERLAY_SLOTS as readonly string[]).includes(slot);
+}
 
 export function isBodySlot(slot: string): boolean {
   return slot === "body_1" || slot === "body_2" || slot === "wide_inset";

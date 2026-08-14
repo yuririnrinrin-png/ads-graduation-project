@@ -884,7 +884,8 @@ select {
 .edit-jewel {
   position: absolute;
   cursor: grab;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+  transform-origin: center center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
 }
 
 .edit-jewel:active {

@@ -170,6 +170,9 @@ export default function NewJobPage() {
               <p className="muted" style={{ fontSize: "0.75rem", margin: "0.35rem 0 0" }}>
                 同一商品・白〜淡色背景・角度違い。順序がディテール1〜3。サムネを選ぶとメイン切替。JPEG / PNG / WebP・各12MBまで。
               </p>
+              <p className="muted" style={{ fontSize: "0.75rem", margin: "0.35rem 0 0" }}>
+                着用に使うメイン写真は、できるだけ正面から撮った1枚を選んでください。斜めでも生成はできます。
+              </p>
             </div>
 
             <div className="upload-grid" role="radiogroup" aria-label="メイン写真">

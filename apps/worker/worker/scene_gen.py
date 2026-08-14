@@ -76,10 +76,10 @@ WEAR_SETTING = {
         "lights softly blurred behind her, sunlit afternoon"
     ),
     "wear_date": (
-        "TWO PEOPLE in frame: she is in the foreground at a fine-dining booth; "
-        "across the table a man in a dark suit is seen from behind, out of focus, "
-        "only his blurred back and one hand near hers on the table. A lit candle "
-        "and two wine glasses between them, warm bokeh lights, romantic evening"
+        "she sits facing the camera at a fine-dining table; a man in a dark "
+        "suit is softly blurred in the background, not the focus. A lit candle "
+        "and two wine glasses, warm bokeh lights, romantic evening. She does "
+        "NOT look over her shoulder"
     ),
     "wear_holiday": (
         "sitting on a wooden beach pier railing, ocean waves and palm leaves "
@@ -91,19 +91,21 @@ WEAR_SETTING = {
 # one generic outfit for all four scenes.
 WEAR_FASHION = {
     "wear_office": (
-        "wearing a sharply tailored business blazer over a silk blouse, "
-        "polished professional office fashion"
+        "wearing an open tailored blazer over a V-neck or scoop silk blouse, "
+        "collarbones and the front of the neck fully visible, jacket not "
+        "buttoned to the throat, polished professional office fashion"
     ),
     "wear_cafe": (
-        "wearing a relaxed yet elegant knit sweater or silky blouse with "
-        "tailored trousers, casual-chic weekend-brunch style"
+        "wearing an open-collar or V-neck blouse, collarbones visible, "
+        "no turtleneck, casual-chic weekend-brunch style"
     ),
     "wear_date": (
-        "wearing a sophisticated fitted dress with a subtly sexy neckline, "
-        "intelligent and alluring grown-up evening style"
+        "wearing a sophisticated fitted dress with an open neckline, "
+        "collarbones and décolletage visible, grown-up evening style"
     ),
     "wear_holiday": (
-        "wearing a refined flowing one-piece dress, elegant resort holiday style"
+        "wearing a refined flowing dress with an open neckline, "
+        "collarbones visible, elegant resort holiday style"
     ),
 }
 
@@ -125,123 +127,128 @@ TONE_SETTING = {
     ),
 }
 
-# Per-slot expression / head-angle / gaze / pose variety. PuLID's face-lock
-# defaults to a straight-on neutral copy of the reference portrait, so each
-# entry spells out an explicit angle and a distinctly different emotion.
+# Jewelry is a front-facing 2D cutout, so every shot stays nearly frontal
+# (yaw within ~15°). Variety comes from expression, a small unique yaw,
+# hairstyle, setting, and clothes — not from profile or over-the-shoulder.
 POSE_VARIATION = {
     "wear_office": (
-        "body turned 45 degrees left, face in a clear three-quarter view "
-        "(not frontal), chin slightly lifted, sharp confident closed-mouth smile, "
-        "eyes toward camera, shoulders angled, upright posture"
+        "CRITICAL EXPRESSION — キリッとした笑顔: a sharp, composed, "
+        "closed-mouth smile with firm lifted corners, intense focused eyes, "
+        "no teeth, not soft, not dreamy. Face turned about 10 degrees left, "
+        "both eyes visible, yaw within 15 degrees"
     ),
     "wear_cafe": (
-        "body angled to her right, head tilted, warm laugh with teeth clearly "
-        "showing, eyes crinkled, three-quarter face (not a straight-on headshot)"
+        "CRITICAL EXPRESSION — 屈託ない笑顔: a big carefree laugh, teeth "
+        "clearly showing, cheeks pushed up, eyes crinkled with genuine joy, "
+        "unselfconscious. Face turned about 8 degrees right, both eyes visible"
     ),
     "wear_date": (
-        "body facing the man across the table (away from camera), she looks back "
-        "over her left shoulder toward the lens in near-profile, soft closed-mouth smirk"
+        "CRITICAL EXPRESSION — 甘えたような笑顔: a coy, sweet, slightly "
+        "pleading closed-mouth smile, softer lower lip, gentle upward glance "
+        "toward the camera, NOT teeth, NOT a smirk of confidence. Face turned "
+        "about 5 degrees left, both eyes visible"
     ),
     "wear_holiday": (
-        "head thrown back in genuine laughter, teeth showing, eyes softly closed, "
-        "face angled 25 degrees up and to the side, relaxed open shoulders"
+        "CRITICAL EXPRESSION — 華やかな笑顔: a glamorous, radiant, wide smile "
+        "showing teeth, bright sparkling eyes, polished beauty-campaign energy "
+        "(not a casual laugh). Chin slightly lifted, face turned about 12 "
+        "degrees right, both eyes open"
     ),
     "body_1": (
-        "STRICT SIDE PROFILE: we see only one eye, her ear, and the side of her "
-        "nose — her face is NOT turned toward the camera. Serene closed-mouth "
-        "smile, one hand on her hip"
+        "CRITICAL EXPRESSION — 自然な笑顔: an easy, unposed closed-mouth "
+        "smile, relaxed cheeks, kind eyes, as if caught mid-conversation. "
+        "NOT a fashion-model pose. Face turned 15 degrees left, BOTH eyes visible"
     ),
     "body_2": (
-        "body three-quarter to the right, big candid grin showing teeth, "
-        "head tilted playfully, bright eyes on camera"
+        "CRITICAL EXPRESSION — 弾ける満面の笑み: an exuberant open grin, "
+        "teeth showing, one playful head tilt, eyes shining — different from "
+        "a polite smile. Face turned about 10 degrees right, both eyes visible"
     ),
     "wide_inset": (
-        "three-quarter turned body, calm closed-mouth smile, gaze looking down "
-        "and away from the camera (not making eye contact)"
+        "CRITICAL EXPRESSION — 上品な微笑: an elegant, calm smile with "
+        "clearly lifted mouth corners, lips closed, composed and gracious, "
+        "gaze slightly down but face still toward camera. NOT blank, NOT a "
+        "grin. Face almost straight-on, both eyes visible"
     ),
 }
 
-# Hairstyle is handled separately from pose because it needs its own strong
-# positive AND negative wording — "hair down" alone is easily overpowered by
-# the reference portrait's own hairstyle, so we explicitly forbid the other
-# states too.
+# Each slot a distinct jewelry-safe style. "tuck" = down the back only
+# (cafe + wide). Never hair over the chest, ears, or front of the neck.
 HAIR_STYLE = {
     "wear_office": (
         "up",
-        "in a sleek low bun with every strand pulled off her neck and shoulders, "
-        "nape fully exposed",
+        "in a sleek high bun at the crown, every strand off the neck, "
+        "nape and both ears fully exposed",
     ),
     "wear_cafe": (
-        "down",
-        "completely down and loose, flowing freely over both shoulders and "
-        "down her back",
+        "tuck",
+        "LONG HAIR WORN COMPLETELY DOWN, length clearly visible past the "
+        "shoulders down her back, loosely tucked behind both ears so earlobes "
+        "show. This is NOT an updo. Hair mass behind her is obvious",
     ),
     "wear_date": (
         "up",
-        "in a high sleek ponytail at the crown, nape and ears fully visible, "
-        "no hair on her shoulders",
+        "in a high sleek ponytail at the crown, nape and both ears fully "
+        "visible, no hair on the shoulders",
     ),
     "wear_holiday": (
-        "down",
-        "completely down and loose, wind-blown waves flowing freely past her "
-        "shoulders",
+        "up",
+        "in a smooth low bun at the nape, both ears visible, no loose hair "
+        "on the chest",
     ),
     "body_1": (
         "up",
-        "in a smooth low chignon at the nape, sleek and fully gathered, "
-        "no loose hair on her shoulders",
+        "in a gathered updo, both ears fully visible, neck clear",
     ),
     "body_2": (
-        "down",
-        "completely down and loose, natural tousled waves falling freely "
-        "past her shoulders",
+        "up",
+        "in an updo with both ears completely uncovered, neck clear",
     ),
     "wide_inset": (
-        "half",
-        "styled half-up half-down — the top section gathered back while the "
-        "rest falls loosely past her shoulders",
+        "tuck",
+        "LONG HAIR WORN COMPLETELY DOWN, length clearly visible past the "
+        "shoulders down her back, loosely tucked behind both ears so earlobes "
+        "show. This is NOT an updo. Hair mass behind her is obvious",
     ),
 }
 
 HAIR_NEGATIVE_BY_STATE = {
-    "up": "hair down, loose hair, flowing hair, hair falling over shoulders, "
-    "hair over the ears, long hair down",
-    "down": "hair up, ponytail, bun, chignon, braid, plait, hair tie, updo, "
-    "hair pinned up, hair pulled back",
-    "half": "hair fully up, hair fully down, ponytail, bun, braid, plait",
+    "up": "hair down, loose hair over the shoulders, hair covering the ears, "
+    "hair covering the neck, hair on the chest",
+    "tuck": "updo, bun, chignon, ponytail, hair pulled up, hair in a knot, "
+    "short pixie, hair covering the collarbones, hair on the chest, "
+    "hair covering the earlobes",
 }
 
-# Extra "don't copy the ID photo" negatives per slot. The reference portrait is
-# always front-facing / hair-down / neutral, so each shot forbids that default
-# plus the opposite of its intended hair/pose.
+# Forbid profile / over-shoulder / the opposite hair of this slot.
 SLOT_NEGATIVE_EXTRA = {
     "wear_office": (
-        "frontal face, straight-on headshot, passport photo, hair down, "
-        "laughing, open mouth, looking fully sideways"
+        "profile, teeth showing, open-mouth laugh, coy pout, dreamy eyes, "
+        "blank stare, hair down over shoulders, turtleneck"
     ),
     "wear_cafe": (
-        "frontal face, passport photo, hair up, bun, ponytail, "
-        "serious closed mouth, frowning, expressionless"
+        "profile, bun, ponytail, updo, hair pulled up, closed-mouth polite "
+        "smile, serious face, frowning, turtleneck, hair on the chest"
     ),
     "wear_date": (
-        "alone, solo portrait, empty table, no other person, hair down, "
-        "frontal face, looking straight at camera, laughing with mouth wide open"
+        "looking over the shoulder, profile, teeth showing, big laugh, "
+        "sharp intense eyes, hair down over the chest, turtleneck"
     ),
     "wear_holiday": (
-        "hair up, bun, ponytail, serious face, frowning, closed mouth, "
-        "frontal passport photo"
+        "head thrown back, eyes closed, profile, closed-mouth smile, "
+        "serious frown, coy pout, turtleneck, hair down over shoulders"
     ),
     "body_1": (
-        "frontal face, looking at camera, hair down, laughing, open mouth, "
-        "tight headshot"
+        "side profile, teeth showing, open mouth, fashion-model pout, "
+        "blank stare, laughing, tight headshot"
     ),
     "body_2": (
-        "hair up, bun, ponytail, serious closed mouth, frowning, "
-        "full side profile, tight headshot"
+        "side profile, closed-mouth polite smile, frowning, blank stare, "
+        "tight headshot"
     ),
     "wide_inset": (
-        "looking straight at camera, big grin, hair fully up, hair fully down, "
-        "tight headshot"
+        "profile, big grin, teeth showing, bun, ponytail, updo, blank stare, "
+        "hair on the chest, tight headshot"
     ),
 }
 
@@ -269,14 +276,21 @@ CATEGORY_FRAMING = {
 NEGATIVE = (
     "jewelry, necklace, earrings, rings, bracelet, watch, accessories, "
     "text, watermark, logo, deformed hands, extra fingers, low quality, blurry, "
-    "neutral expressionless face, blank stare, straight-on symmetric portrait, "
-    "stiff passport-photo pose, extreme close-up, tight face-only crop, "
-    "face filling the entire frame, cropped above the collarbone"
+    "side profile, full profile, looking over the shoulder, "
+    "face turned more than 15 degrees, only one eye visible, "
+    "extreme close-up, tight face-only crop, "
+    "face filling the entire frame, cropped above the collarbone, "
+    "hair covering the ears, hair covering the front of the neck"
+)
+
+NEGATIVE_BUST = NEGATIVE + (
+    ", turtleneck, high neck, mock neck, hair on the chest"
 )
 
 # Face-lock models bias toward tight headshots; push back for the wider
 # "coordinate" shots so at least the outfit/torso reads clearly (feet may
 # still be out of frame — that's fine, we only need the styling to be visible).
+# Turtleneck is allowed on full-body / wide shots.
 NEGATIVE_FULL_BODY = NEGATIVE + (
     ", extreme close-up, tight headshot, face-only crop, cut off above the waist"
 )
@@ -313,30 +327,29 @@ def build_reference_prompt(persona_name: str) -> str:
     hair = persona_hair(persona_name)
     return (
         f"Photorealistic head-and-shoulders portrait of {look}, with {hair} "
-        "worn down naturally. Camera pulled back enough to show her neck "
-        "and collarbones, not just a tight face close-up. "
-        "Facing camera, neutral soft expression, studio softbox lighting, "
-        "plain warm gray background, high detail skin, 85mm lens. "
+        "worn DOWN (not a bun), tucked behind both ears so the earlobes, neck, "
+        "and collarbones are fully visible, hair length falling down her back. "
+        "Open neckline. Facing the camera straight-on, soft neutral "
+        "closed-mouth expression, studio softbox lighting, plain warm gray "
+        "background, high detail skin, 85mm lens. "
         "No jewelry, no earrings, bare ears and neck visible."
     )
 
 
 def hair_state(slot: str) -> str:
-    return HAIR_STYLE.get(slot, ("down", ""))[0]
+    return HAIR_STYLE.get(slot, ("up", ""))[0]
 
 
 def slot_id_weight(slot: str, mode: str) -> float:
-    """Hair-up / profile shots fight the ID photo hardest, so loosen the lock."""
-    state = hair_state(slot)
-    if slot in ("wear_office", "wear_date", "body_1"):
-        return 0.48
-    if state == "half":
-        return 0.52
-    return 0.55 if mode == "full" else 0.62
+    """Reference is hair-down + ears out. Tuck slots keep a tighter lock so
+    they copy that down hair. Updo slots loosen so bun/ponytail can win."""
+    if hair_state(slot) == "tuck":
+        return 0.62
+    return 0.48 if mode == "full" else 0.50
 
 
 def slot_negative_prompt(slot: str, mode: str) -> str:
-    base = NEGATIVE_FULL_BODY if mode == "full" else NEGATIVE
+    base = NEGATIVE_FULL_BODY if mode == "full" else NEGATIVE_BUST
     extras = [HAIR_NEGATIVE_BY_STATE.get(hair_state(slot), "")]
     extras.append(SLOT_NEGATIVE_EXTRA.get(slot, ""))
     extra = ", ".join(e for e in extras if e)
@@ -354,28 +367,33 @@ def build_scene_prompt(
     meta = SCENE_META[slot]
     framing = category_framing(category)
 
-    pose = POSE_VARIATION.get(slot, "natural relaxed expression and pose")
-    state, hair_style = HAIR_STYLE.get(slot, ("down", "worn naturally"))
+    pose = POSE_VARIATION.get(slot, "nearly frontal face, natural expression")
+    state, hair_style = HAIR_STYLE.get(slot, ("up", "worn off the neck"))
     # Pose + hair MUST lead the prompt. fal-ai/flux-pulid defaults
-    # max_sequence_length=128, which silently dropped the old tail (pose lived
-    # after fashion/setting). We now request 512 tokens AND put the variety
-    # first so PuLID cannot copy the ID photo's front-facing hair-down look.
+    # max_sequence_length=128, which silently dropped the old tail.
     if state == "up":
         hair_line = (
-            f"CRITICAL HAIRSTYLE: hair is UP in a bun or ponytail. "
-            f"The nape of her neck is fully exposed. Zero hair on her shoulders. "
+            f"CRITICAL HAIRSTYLE: hair is UP. "
+            f"The nape of her neck and both ears are fully exposed. "
+            f"Zero hair on the chest or in front of the neck. "
             f"Her {hair_color} is {hair_style}."
         )
-        lead = f"{hair_line} Pose and expression: {pose}."
-    elif state == "half":
-        hair_line = (
-            f"Hairstyle is HALF-UP: the top is gathered, the rest still falls. "
-            f"Her {hair_color} is {hair_style}."
+        lead = (
+            f"{pose} {hair_line} "
+            "Head is nearly frontal — both eyes visible, yaw within 15 degrees."
         )
-        lead = f"Pose and expression (must differ from a passport photo): {pose}. {hair_line}"
     else:
-        hair_line = f"Hairstyle: her {hair_color} is {hair_style}."
-        lead = f"Pose and expression (must differ from a passport photo): {pose}. {hair_line}"
+        hair_line = (
+            f"CRITICAL HAIRSTYLE: HAIR IS DOWN. Long hair falling down her "
+            f"back, loosely tucked behind both ears. You can see the hair "
+            f"length past the shoulders. NOT a bun, NOT a ponytail, NOT an updo. "
+            f"Collarbones and the front of the neck stay clear. "
+            f"Her {hair_color} is {hair_style}."
+        )
+        lead = (
+            f"{hair_line} {pose} "
+            "Head is nearly frontal — both eyes visible, yaw within 15 degrees."
+        )
 
     if meta["mode"] == "bust":
         setting = WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
@@ -383,15 +401,16 @@ def build_scene_prompt(
         companion = ""
         if slot == "wear_date":
             companion = (
-                "A second person is visible: a man in a dark suit seen from behind, "
-                "out of focus, only his blurred back and a hand on the table. "
+                "A second person may be softly blurred in the background. "
+                "She faces the camera, not looking over her shoulder. "
             )
         return (
             f"{lead} {companion}"
             f"Photorealistic commercial jewelry catalog photo of {look}. "
             f"{fashion}. {framing}. Setting: {setting}. "
-            "Same woman as the identity reference, but do NOT copy that photo's "
-            "front-facing pose, neutral face, or hair-down styling. "
+            "Same woman as the identity reference. Keep the face nearly frontal. "
+            "Do NOT copy a blank or identical polite smile — this shot's "
+            "expression must match the CRITICAL EXPRESSION above. "
             "Absolutely no jewelry on the model — bare skin where jewelry would sit. "
             "No text, no watermark."
         )
@@ -407,8 +426,9 @@ def build_scene_prompt(
         f"Standing, camera framing from the top of her head down "
         f"to at least mid-thigh so her full coordinated outfit and styling are "
         f"clearly visible. {setting}. "
-        "Same woman as the identity reference, but do NOT copy that photo's "
-        "front-facing pose, neutral face, or hair-down styling. "
+        "Same woman as the identity reference. Keep the face nearly frontal. "
+        "Do NOT copy a blank or identical polite smile — this shot's "
+        "expression must match the CRITICAL EXPRESSION above. "
         "Bare of jewelry (no necklace, earrings, rings, or bracelets). "
         "Square 1:1 crop, no text, no watermark."
     )
@@ -495,7 +515,7 @@ def generate_scene_fal(
     on_api_call: Callable[[], None] | None = None,
 ) -> Image.Image:
     # PuLID's default id_weight=1 copies the reference portrait's
-    # expression/pose/hairstyle. Hair-up and profile shots need a looser lock.
+    # expression. Tuck-down slots use a slightly looser lock.
     is_full = mode == "full"
     negative = negative_prompt or (NEGATIVE_FULL_BODY if is_full else NEGATIVE)
     id_w = slot_id_weight(slot, mode) if slot else (0.55 if is_full else 0.62)
@@ -510,10 +530,7 @@ def generate_scene_fal(
             "image_size": {"width": FAL_GEN_SIZE, "height": FAL_GEN_SIZE},
             "num_inference_steps": 24,
             "seed": seed,
-            # Face-based jewelry placement now exists (face_anchor.py), so a
-            # slightly looser ID lock is safe. The bigger fix is
-            # max_sequence_length=512: the default 128 was truncating pose/hair
-            # off the end of the prompt, so every shot copied the ID photo.
+            # max_sequence_length=512: the default 128 truncated pose/hair.
             "guidance_scale": 4.5 if is_full else 4.2,
             "true_cfg": 1.8,
             "max_sequence_length": "512",

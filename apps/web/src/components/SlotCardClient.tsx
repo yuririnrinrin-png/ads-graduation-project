@@ -8,6 +8,7 @@ import {
   DEFAULT_TRANSFORM,
   DETAIL_SLOTS,
   TRANSFORM_OFFSET_LIMIT,
+  TRANSFORM_ROTATE_LIMIT,
   getAnchors,
   SLOT_BADGES,
   SLOT_LABELS,
@@ -33,12 +34,14 @@ type Props = {
 const MIN_SCALE = 0.4;
 const MAX_SCALE = 2.2;
 const MAX_OFFSET = TRANSFORM_OFFSET_LIMIT;
+const MAX_ROTATE = TRANSFORM_ROTATE_LIMIT;
 
 function clampTransform(t: SlotTransform): SlotTransform {
   return {
     scale: Math.min(MAX_SCALE, Math.max(MIN_SCALE, t.scale)),
     offsetX: Math.min(MAX_OFFSET, Math.max(-MAX_OFFSET, t.offsetX)),
     offsetY: Math.min(MAX_OFFSET, Math.max(-MAX_OFFSET, t.offsetY)),
+    rotate: Math.min(MAX_ROTATE, Math.max(-MAX_ROTATE, t.rotate ?? 0)),
   };
 }
 
@@ -72,6 +75,8 @@ export function SlotCardClient({
   const [bust, setBust] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const transformsRef = useRef(transforms);
+  transformsRef.current = transforms;
 
   async function commit(next: SlotTransform[]) {
     setPending(true);
@@ -139,7 +144,7 @@ export function SlotCardClient({
   function endDrag() {
     if (!dragRef.current) return;
     dragRef.current = null;
-    void commit(transforms);
+    void commit(transformsRef.current);
   }
 
   function reset() {
@@ -237,7 +242,7 @@ export function SlotCardClient({
             style={{ fontSize: "0.75rem", width: "100%", padding: "0.4rem", marginTop: "0.5rem" }}
             onClick={() => setEditing(true)}
           >
-            大きさ・位置をドラッグ調整
+            大きさ・位置・回転を調整
           </button>
         ) : null}
       </div>
@@ -267,6 +272,7 @@ export function SlotCardClient({
           const widthPct = anchor.scale * t.scale * 100;
           const cxPct = anchor.x * 100 + (t.offsetX / CANVAS_SIZE) * 100;
           const cyPct = anchor.y * 100 + (t.offsetY / CANVAS_SIZE) * 100;
+          const deg = (anchor.rotate ?? 0) + (t.rotate ?? 0);
           return (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -280,7 +286,7 @@ export function SlotCardClient({
                 left: `${cxPct - widthPct / 2}%`,
                 top: `${cyPct - widthPct / 2}%`,
                 width: `${widthPct}%`,
-                transform: i % 2 === 1 ? "scaleX(-1)" : undefined,
+                transform: `${i % 2 === 1 ? "scaleX(-1) " : ""}rotate(${deg}deg)`,
               }}
             />
           );
@@ -305,9 +311,41 @@ export function SlotCardClient({
       </div>
       <p className="faint" style={{ margin: "0.4rem 0 0", fontSize: "0.7rem" }}>
         {multi
-          ? "左右それぞれドラッグで移動 · 丸のつまみで個別にサイズ調整"
-          : "ジュエリーをドラッグで移動 · 右下の丸をドラッグで大きさ調整"}
+          ? "左右それぞれドラッグで移動 · 丸のつまみでサイズ · スライダーで回転"
+          : "ジュエリーをドラッグで移動 · 右下の丸で大きさ · スライダーで回転"}
       </p>
+      <div className="row" style={{ gap: "0.65rem", marginTop: "0.45rem", alignItems: "center" }}>
+        {anchors.map((_, i) => {
+          const t = transforms[i] ?? DEFAULT_TRANSFORM;
+          const label = multi ? (i === 0 ? "左の回転" : "右の回転") : "回転";
+          return (
+            <label
+              key={i}
+              className="faint"
+              style={{ display: "grid", gap: "0.15rem", fontSize: "0.7rem", flex: 1 }}
+            >
+              {label} {Math.round(t.rotate ?? 0)}°
+              <input
+                type="range"
+                min={-MAX_ROTATE}
+                max={MAX_ROTATE}
+                step={1}
+                value={t.rotate ?? 0}
+                disabled={pending}
+                aria-label={label}
+                onChange={(e) => {
+                  const rotate = Number(e.target.value);
+                  setTransforms((prev) =>
+                    prev.map((x, idx) => (idx === i ? clampTransform({ ...x, rotate }) : x))
+                  );
+                }}
+                onPointerUp={() => void commit(transformsRef.current)}
+                onKeyUp={() => void commit(transformsRef.current)}
+              />
+            </label>
+          );
+        })}
+      </div>
       <div className="row" style={{ gap: "0.35rem", marginTop: "0.4rem" }}>
         <button
           type="button"
