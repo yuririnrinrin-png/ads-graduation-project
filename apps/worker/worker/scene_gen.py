@@ -127,48 +127,54 @@ TONE_SETTING = {
     ),
 }
 
-# Jewelry is a front-facing 2D cutout, so every shot stays nearly frontal
-# (yaw within ~15°). Variety comes from expression, a small unique yaw,
-# hairstyle, setting, and clothes — not from profile or over-the-shoulder.
+# Torso stays jewelry-friendly. Never say "facing camera" about the person as
+# a whole — Flux/PuLID treats that as a frontal FACE.
+BODY_RULE = (
+    "Shoulders and chest stay square to the lens (torso yaw under 15 degrees). "
+    "The FACE is independent and must NOT copy a frontal ID photo."
+)
+
+# Slots that must break the ID photo's front-facing eye-contact pose.
+TURNED_SLOTS = frozenset({"wear_cafe", "wear_date", "body_1", "wide_inset"})
+
 POSE_VARIATION = {
     "wear_office": (
-        "CRITICAL EXPRESSION — キリッとした笑顔: a sharp, composed, "
-        "closed-mouth smile with firm lifted corners, intense focused eyes, "
-        "no teeth, not soft, not dreamy. Face turned about 10 degrees left, "
-        "both eyes visible, yaw within 15 degrees"
+        "HEAD: three-quarter view, turned 30 degrees, not a passport photo. "
+        "キリッとした笑顔: sharp closed-mouth smile, no teeth. "
+        "GAZE: toward camera but SOFT, upper lids slightly lowered"
     ),
     "wear_cafe": (
-        "CRITICAL EXPRESSION — 屈託ない笑顔: a big carefree laugh, teeth "
-        "clearly showing, cheeks pushed up, eyes crinkled with genuine joy, "
-        "unselfconscious. Face turned about 8 degrees right, both eyes visible"
+        "HEAD: strong three-quarter, turned 50–60 degrees — we see her ear, "
+        "jaw, and one cheek more than the other. Holding a cup. "
+        "自然な笑顔: quiet closed-mouth smile. "
+        "GAZE: DOWNCAST looking at the cup, eyes averted, ZERO eye contact, "
+        "not looking at the lens"
     ),
     "wear_date": (
-        "CRITICAL EXPRESSION — 甘えたような笑顔: a coy, sweet, slightly "
-        "pleading closed-mouth smile, softer lower lip, gentle upward glance "
-        "toward the camera, NOT teeth, NOT a smirk of confidence. Face turned "
-        "about 5 degrees left, both eyes visible"
+        "HEAD: three-quarter, turned 45 degrees, ear visible. "
+        "甘えたような笑顔: coy closed-mouth smile. "
+        "GAZE: looking off-camera and slightly down, no eye contact"
     ),
     "wear_holiday": (
-        "CRITICAL EXPRESSION — 華やかな笑顔: a glamorous, radiant, wide smile "
-        "showing teeth, bright sparkling eyes, polished beauty-campaign energy "
-        "(not a casual laugh). Chin slightly lifted, face turned about 12 "
-        "degrees right, both eyes open"
+        "HEAD: tilted to one shoulder, turned about 25 degrees. "
+        "華やかな笑顔: glamorous smile SHOWING TEETH. "
+        "GAZE: toward camera but squinting softly from the smile, not a stare"
     ),
     "body_1": (
-        "CRITICAL EXPRESSION — 自然な笑顔: an easy, unposed closed-mouth "
-        "smile, relaxed cheeks, kind eyes, as if caught mid-conversation. "
-        "NOT a fashion-model pose. Face turned 15 degrees left, BOTH eyes visible"
+        "HEAD: STRICT SIDE PROFILE, about 80–90 degrees. We see only ONE eye, "
+        "her ear, and the side of her nose. Chin slightly up. "
+        "上品で静か: calm closed lips. "
+        "GAZE: eyes closed or looking down along the profile — never at camera"
     ),
     "body_2": (
-        "CRITICAL EXPRESSION — 弾ける満面の笑み: an exuberant open grin, "
-        "teeth showing, one playful head tilt, eyes shining — different from "
-        "a polite smile. Face turned about 10 degrees right, both eyes visible"
+        "HEAD: turned 25 degrees with a playful tilt. "
+        "屈託ない笑顔: open grin SHOWING TEETH. "
+        "GAZE: toward camera but crinkled and soft"
     ),
     "wide_inset": (
-        "CRITICAL EXPRESSION — 上品な微笑: an elegant, calm smile with "
-        "clearly lifted mouth corners, lips closed, composed and gracious, "
-        "gaze slightly down but face still toward camera. NOT blank, NOT a "
-        "grin. Face almost straight-on, both eyes visible"
+        "HEAD: three-quarter, turned 45–50 degrees, ear and jaw clearly shown. "
+        "上品な微笑: calm closed-mouth smile. "
+        "GAZE: downcast, looking down and away, no eye contact"
     ),
 }
 
@@ -223,36 +229,42 @@ HAIR_NEGATIVE_BY_STATE = {
 # Forbid profile / over-shoulder / the opposite hair of this slot.
 SLOT_NEGATIVE_EXTRA = {
     "wear_office": (
-        "profile, teeth showing, open-mouth laugh, coy pout, dreamy eyes, "
-        "blank stare, hair down over shoulders, turtleneck"
+        "teeth showing, open-mouth laugh, coy pout, downcast looking away, "
+        "eyes closed, blank stare, piercing stare, turtleneck"
     ),
     "wear_cafe": (
-        "profile, bun, ponytail, updo, hair pulled up, closed-mouth polite "
-        "smile, serious face, frowning, turtleneck, hair on the chest"
+        "looking at the camera, eye contact, looking at the viewer, "
+        "facing the camera, frontal face, both eyes equally visible, "
+        "passport photo, toothy grin, bun, ponytail, updo, turtleneck"
     ),
     "wear_date": (
-        "looking over the shoulder, profile, teeth showing, big laugh, "
-        "sharp intense eyes, hair down over the chest, turtleneck"
+        "looking at the camera, eye contact, frontal face, passport photo, "
+        "teeth showing, big laugh, turtleneck"
     ),
     "wear_holiday": (
-        "head thrown back, eyes closed, profile, closed-mouth smile, "
-        "serious frown, coy pout, turtleneck, hair down over shoulders"
+        "eyes closed, downcast looking away, closed-mouth only, coy pout, "
+        "serious frown, piercing stare, turtleneck"
     ),
     "body_1": (
-        "side profile, teeth showing, open mouth, fashion-model pout, "
-        "blank stare, laughing, tight headshot"
+        "looking at the camera, eye contact, frontal face, both eyes visible, "
+        "passport photo, teeth showing, big grin, tight headshot"
     ),
     "body_2": (
-        "side profile, closed-mouth polite smile, frowning, blank stare, "
-        "tight headshot"
+        "closed-mouth polite smile, eyes closed, looking away, frowning, "
+        "blank stare, piercing stare, tight headshot"
     ),
     "wide_inset": (
-        "profile, big grin, teeth showing, bun, ponytail, updo, blank stare, "
-        "hair on the chest, tight headshot"
+        "looking at the camera, eye contact, frontal face, passport photo, "
+        "both eyes equally visible, big grin, teeth showing, bun, ponytail, "
+        "updo, tight headshot"
     ),
 }
 
-# What body region the wear shot must expose for later jewelry composite.
+# Wear-4 camera: necklace/earring stay bust/face. Ring/bracelet put the
+# placement zone (fingers / wrist) in the lower frame. Face stays in-shot
+# so PuLID can still lock identity — never a finger-only macro.
+HAND_FOCUS_CATEGORIES = frozenset({"ring", "bracelet"})
+
 CATEGORY_FRAMING = {
     "necklace": (
         "bust-up portrait showing face, neck, and upper chest, camera pulled "
@@ -260,24 +272,133 @@ CATEGORY_FRAMING = {
         "(not a tight face-only close-up). Bare neck and décolletage clearly visible"
     ),
     "earring": (
-        "close portrait of the face with both ears clearly visible. "
-        "Bare earlobes, hair tucked or parted away from ears"
+        "portrait showing at least the near ear fully, bare earlobe, "
+        "hair tucked behind the ear so jewelry can sit there"
     ),
     "ring": (
-        "fashion photo emphasizing elegant bare hands and fingers in a natural pose, "
-        "face softly visible in background or cropped"
+        "CRITICAL CROP: her BARE HANDS AND FINGERS fill the lower two-thirds "
+        "of the square frame and are the subject. The PALM OR BACK OF THE HAND "
+        "faces the camera (hand plane yaw under 15 degrees) so a flat ring "
+        "photo can sit on the finger. Fingers slightly spread, ring finger "
+        "unobstructed. Her face stays clearly visible in the upper third "
+        "(identity), smaller than the hands — not a face close-up, not a "
+        "finger-only macro with no face"
     ),
     "bracelet": (
-        "fashion photo emphasizing bare forearm and wrist, "
-        "hands relaxed, face softly visible"
+        "CRITICAL CROP: her BARE FOREARM AND WRIST fill the lower two-thirds "
+        "of the square frame and are the subject. The INNER WRIST faces the "
+        "camera almost flat (wrist yaw under 15 degrees), forearm lying across "
+        "the lower frame like a jewelry catalog, sleeve pushed up so the wrist "
+        "bone is fully visible. NOT a steep side-on cylinder. "
+        "Her face stays clearly visible in the upper third (identity), "
+        "smaller than the arm — not a face close-up, not a wrist-only "
+        "macro with no face"
+    ),
+}
+
+# Same idea as BODY_RULE for the torso: the placement plane faces the lens
+# so a flat real cutout can sit on it. Lead the hand-category prompts with this.
+HAND_PRESENT_RULE = {
+    "ring": (
+        "HANDS FACE THE LENS. The back or palm of the near hand is square to "
+        "the camera. Do NOT twist the wrist into profile. Do NOT cross the arms. "
+        "Do NOT rest a hand on the opposite shoulder."
+    ),
+    "bracelet": (
+        "WRIST FACES THE LENS. The inner wrist is presented almost flat to the "
+        "camera, like showing a watch. Forearm across the lower frame, not "
+        "pointing at the lens as a steep cylinder. Do NOT cross the arms. "
+        "Do NOT hug herself. Do NOT rest a hand on the opposite shoulder."
+    ),
+}
+
+# Per-slot hand/wrist action so the four wear shots are not copies.
+WEAR_HAND_POSE = {
+    "ring": {
+        "wear_office": (
+            "Both hands rest on the glass desk, palms down, backs of the hands "
+            "facing the camera, fingers relaxed and slightly spread."
+        ),
+        "wear_cafe": (
+            "Hands rest on the table beside the cup — not gripping it. "
+            "Backs of the hands face the camera, fingers fully visible."
+        ),
+        "wear_date": (
+            "One hand rests flat on the tablecloth near a wine glass, "
+            "back of the hand to the camera, fingers loosely open."
+        ),
+        "wear_holiday": (
+            "Hands rest on the pier railing, backs of the hands to the camera, "
+            "fingers slightly spread in sunlight."
+        ),
+    },
+    "bracelet": {
+        "wear_office": (
+            "One forearm lies across the glass desk toward the camera, "
+            "inner wrist flat and fully shown, sleeve rolled to mid-forearm."
+        ),
+        "wear_cafe": (
+            "Forearm rests on the wooden table beside the cup, inner wrist "
+            "flat to the camera, sleeve pushed up. She is not holding the cup."
+        ),
+        "wear_date": (
+            "One forearm rests on the white tablecloth, inner wrist presented "
+            "flat to the camera near a wine glass. Arms are NOT crossed."
+        ),
+        "wear_holiday": (
+            "Forearm rests along the pier railing, inner wrist flat to the "
+            "camera, sleeve away from the wrist bone."
+        ),
+    },
+}
+
+WEAR_FASHION_HAND = {
+    "ring": (
+        "wearing a refined outfit whose sleeves stay clear of the hands; "
+        "bare fingers, no gloves, no stacked rings"
+    ),
+    "bracelet": (
+        "wearing a refined outfit with sleeves rolled or short so both wrists "
+        "can show; no watch, no cuff covering the wrist bone"
+    ),
+}
+
+# Full-body / wide: keep the standing crop, but the placement zone must exist.
+CATEGORY_FULL_EXTRA = {
+    "ring": (
+        "One hand is slightly forward, back of the hand facing the camera, "
+        "fingers visible (not in pockets, not a fist, not behind her back, "
+        "arms not crossed)."
+    ),
+    "bracelet": (
+        "One forearm is slightly forward, inner wrist facing the camera, "
+        "sleeve not covering the wrist (not hands in pockets, arms not "
+        "crossed, not hugging herself)."
+    ),
+}
+
+HAND_NEGATIVE = (
+    "tight face-only crop, headshot, no hands, hands out of frame, "
+    "hands in pockets, clenched fists, gloves, extra fingers, "
+    "deformed hands, missing fingers, jewelry on the hands, "
+    "arms crossed, crossed arms, hugging herself, hand on opposite "
+    "shoulder, wrist in profile, steep foreshortened arm, "
+    "side-on wrist, arm pointing at the camera"
+)
+
+HAND_NEGATIVE_BY_CATEGORY = {
+    "ring": "fingers hidden, fist, hands behind back, edge-on hand",
+    "bracelet": (
+        "long sleeves covering wrists, watch, cuffs over the wrist, "
+        "arms crossed, wrist in profile, cylindrical side view of the arm"
     ),
 }
 
 NEGATIVE = (
     "jewelry, necklace, earrings, rings, bracelet, watch, accessories, "
     "text, watermark, logo, deformed hands, extra fingers, low quality, blurry, "
-    "side profile, full profile, looking over the shoulder, "
-    "face turned more than 15 degrees, only one eye visible, "
+    "back to camera, body facing away, over-the-shoulder body twist, "
+    "passport photo, identical polite smile, piercing stare into the lens, "
     "extreme close-up, tight face-only crop, "
     "face filling the entire frame, cropped above the collarbone, "
     "hair covering the ears, hair covering the front of the neck"
@@ -326,13 +447,12 @@ def build_reference_prompt(persona_name: str) -> str:
     look = persona_look(persona_name)
     hair = persona_hair(persona_name)
     return (
-        f"Photorealistic head-and-shoulders portrait of {look}, with {hair} "
-        "worn DOWN (not a bun), tucked behind both ears so the earlobes, neck, "
-        "and collarbones are fully visible, hair length falling down her back. "
-        "Open neckline. Facing the camera straight-on, soft neutral "
-        "closed-mouth expression, studio softbox lighting, plain warm gray "
-        "background, high detail skin, 85mm lens. "
-        "No jewelry, no earrings, bare ears and neck visible."
+        f"Photorealistic CLOSE-UP identity portrait of {look}, face filling "
+        f"most of the frame, both eyes clearly visible, looking straight at the "
+        f"camera. {hair} tucked behind both ears so earlobes show. Tight "
+        "head-and-shoulders crop (not a wide shot). Neutral closed-mouth "
+        "expression, studio softbox, plain warm gray background, 85mm lens. "
+        "No jewelry, no earrings."
     )
 
 
@@ -340,20 +460,62 @@ def hair_state(slot: str) -> str:
     return HAIR_STYLE.get(slot, ("up", ""))[0]
 
 
+def slot_pulid_params(slot: str | None, mode: str) -> dict:
+    """Lower id_weight + higher true_cfg so the prompt can turn the head.
+
+    Do NOT send start_step>0 to fal-ai/flux-pulid — that path returns
+    400 "Failed to get ID embeddings (no face detected): facexlib align face fail".
+    """
+    turned = slot in TURNED_SLOTS
+    if turned:
+        return {"id_weight": 0.32, "true_cfg": 3.0, "guidance_scale": 5.8}
+    return {
+        "id_weight": 0.42 if mode == "full" else 0.45,
+        "true_cfg": 2.4,
+        "guidance_scale": 5.0,
+    }
+
+
 def slot_id_weight(slot: str, mode: str) -> float:
-    """Reference is hair-down + ears out. Tuck slots keep a tighter lock so
-    they copy that down hair. Updo slots loosen so bun/ponytail can win."""
-    if hair_state(slot) == "tuck":
-        return 0.62
-    return 0.48 if mode == "full" else 0.50
+    return float(slot_pulid_params(slot, mode)["id_weight"])
 
 
-def slot_negative_prompt(slot: str, mode: str) -> str:
+def slot_negative_prompt(slot: str, mode: str, category: str | None = None) -> str:
+    if category in HAND_FOCUS_CATEGORIES:
+        extras = [
+            HAND_NEGATIVE,
+            HAND_NEGATIVE_BY_CATEGORY.get(category or "", ""),
+            HAIR_NEGATIVE_BY_STATE.get(hair_state(slot), ""),
+            SLOT_NEGATIVE_EXTRA.get(slot, ""),
+        ]
+        if mode == "full":
+            extras.append("tight headshot, cut off above the waist")
+        extra = ", ".join(e for e in extras if e)
+        return f"{NEGATIVE}, {extra}"
     base = NEGATIVE_FULL_BODY if mode == "full" else NEGATIVE_BUST
     extras = [HAIR_NEGATIVE_BY_STATE.get(hair_state(slot), "")]
     extras.append(SLOT_NEGATIVE_EXTRA.get(slot, ""))
     extra = ", ".join(e for e in extras if e)
     return f"{base}, {extra}" if extra else base
+
+
+def _hair_line(persona_name: str, slot: str) -> str:
+    hair_color = persona_hair(persona_name)
+    state, hair_style = HAIR_STYLE.get(slot, ("up", "worn off the neck"))
+    if state == "up":
+        return (
+            f"CRITICAL HAIRSTYLE: hair is UP. "
+            f"The nape of her neck and both ears are fully exposed. "
+            f"Zero hair on the chest or in front of the neck. "
+            f"Her {hair_color} is {hair_style}."
+        )
+    return (
+        f"CRITICAL HAIRSTYLE: HAIR IS DOWN. Long hair falling down her "
+        f"back, loosely tucked behind both ears. You can see the hair "
+        f"length past the shoulders. NOT a bun, NOT a ponytail, NOT an updo. "
+        f"Collarbones and the front of the neck stay clear. "
+        f"Her {hair_color} is {hair_style}."
+    )
 
 
 def build_scene_prompt(
@@ -363,37 +525,19 @@ def build_scene_prompt(
     tone_label: str | None = None,
 ) -> str:
     look = persona_look(persona_name)
-    hair_color = persona_hair(persona_name)
     meta = SCENE_META[slot]
     framing = category_framing(category)
 
-    pose = POSE_VARIATION.get(slot, "nearly frontal face, natural expression")
-    state, hair_style = HAIR_STYLE.get(slot, ("up", "worn off the neck"))
-    # Pose + hair MUST lead the prompt. fal-ai/flux-pulid defaults
-    # max_sequence_length=128, which silently dropped the old tail.
-    if state == "up":
-        hair_line = (
-            f"CRITICAL HAIRSTYLE: hair is UP. "
-            f"The nape of her neck and both ears are fully exposed. "
-            f"Zero hair on the chest or in front of the neck. "
-            f"Her {hair_color} is {hair_style}."
+    if category in HAND_FOCUS_CATEGORIES:
+        return _build_hand_scene_prompt(
+            persona_name, look, slot, category, framing, tone_label, meta["mode"]
         )
-        lead = (
-            f"{pose} {hair_line} "
-            "Head is nearly frontal — both eyes visible, yaw within 15 degrees."
-        )
-    else:
-        hair_line = (
-            f"CRITICAL HAIRSTYLE: HAIR IS DOWN. Long hair falling down her "
-            f"back, loosely tucked behind both ears. You can see the hair "
-            f"length past the shoulders. NOT a bun, NOT a ponytail, NOT an updo. "
-            f"Collarbones and the front of the neck stay clear. "
-            f"Her {hair_color} is {hair_style}."
-        )
-        lead = (
-            f"{hair_line} {pose} "
-            "Head is nearly frontal — both eyes visible, yaw within 15 degrees."
-        )
+
+    pose = POSE_VARIATION.get(slot, "torso square, distinct head angle")
+    hair_line = _hair_line(persona_name, slot)
+    # Pose/gaze MUST be the first tokens. BODY_RULE used to lead with
+    # "facing camera" and PuLID copied a frontal face for every slot.
+    lead = f"{pose} {hair_line} {BODY_RULE}"
 
     if meta["mode"] == "bust":
         setting = WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
@@ -402,15 +546,16 @@ def build_scene_prompt(
         if slot == "wear_date":
             companion = (
                 "A second person may be softly blurred in the background. "
-                "She faces the camera, not looking over her shoulder. "
+                "She sits with her torso toward the camera; her head may turn. "
+                "She does not twist her whole body away. "
             )
         return (
             f"{lead} {companion}"
             f"Photorealistic commercial jewelry catalog photo of {look}. "
             f"{fashion}. {framing}. Setting: {setting}. "
-            "Same woman as the identity reference. Keep the face nearly frontal. "
-            "Do NOT copy a blank or identical polite smile — this shot's "
-            "expression must match the CRITICAL EXPRESSION above. "
+            "Same woman as the identity reference but do NOT copy that photo's "
+            "frontal pose or eye contact. Head angle and gaze must match "
+            "the HEAD / GAZE lines above. "
             "Absolutely no jewelry on the model — bare skin where jewelry would sit. "
             "No text, no watermark."
         )
@@ -426,9 +571,85 @@ def build_scene_prompt(
         f"Standing, camera framing from the top of her head down "
         f"to at least mid-thigh so her full coordinated outfit and styling are "
         f"clearly visible. {setting}. "
-        "Same woman as the identity reference. Keep the face nearly frontal. "
-        "Do NOT copy a blank or identical polite smile — this shot's "
-        "expression must match the CRITICAL EXPRESSION above. "
+        "Same woman as the identity reference but do NOT copy that photo's "
+        "frontal pose or eye contact. Head angle and gaze must match "
+        "the HEAD / GAZE lines above. "
+        "Bare of jewelry (no necklace, earrings, rings, or bracelets). "
+        "Square 1:1 crop, no text, no watermark."
+    )
+
+
+def _pose_line(slot: str, category: str) -> str:
+    pose = POSE_VARIATION.get(slot, "torso square, distinct head angle")
+    if category in HAND_FOCUS_CATEGORIES:
+        # Cup-in-hands hides the wrist/fingers we need to composite onto.
+        pose = pose.replace("Holding a cup. ", "").replace("Holding a cup.", "")
+    return pose
+
+
+def _hand_fashion(slot: str, category: str) -> str:
+    scene_fashion = WEAR_FASHION.get(slot, "wearing a stylish coordinated outfit")
+    hand_bit = WEAR_FASHION_HAND.get(category, "")
+    return f"{scene_fashion}. {hand_bit}" if hand_bit else scene_fashion
+
+
+def _build_hand_scene_prompt(
+    persona_name: str,
+    look: str,
+    slot: str,
+    category: str,
+    framing: str,
+    tone_label: str | None,
+    mode: str,
+) -> str:
+    pose = _pose_line(slot, category)
+    hair_line = _hair_line(persona_name, slot)
+    present = HAND_PRESENT_RULE.get(category, "")
+    hand_pose = WEAR_HAND_POSE.get(category, {}).get(
+        slot, "bare hands clearly visible in the lower frame"
+    )
+    fashion = _hand_fashion(slot, category)
+    # HEAD / hair / expression first (same as necklace/earring), then the
+    # wrist/hand must still face the lens for a flat cutout to sit.
+    lead = f"{pose} {hair_line} {present}"
+
+    if mode == "bust":
+        setting = WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
+        companion = ""
+        if slot == "wear_date":
+            companion = (
+                "A second person may be softly blurred in the background. "
+                "She sits with her torso toward the camera; her head may turn. "
+                "She does not twist her whole body away. "
+            )
+        return (
+            f"{lead} {companion} {framing} {hand_pose} "
+            f"Photorealistic commercial jewelry catalog photo of {look}. "
+            f"{fashion}. Setting: {setting}. "
+            "Same woman as the identity reference but do NOT copy that photo's "
+            "frontal pose or eye contact. Head angle, expression, and gaze must "
+            "match the HEAD / GAZE lines above. The FACE may turn; the "
+            "wrist/hand plane stays square to the lens. "
+            "Absolutely no jewelry on the model — bare skin on fingers and wrists. "
+            "No text, no watermark."
+        )
+
+    tone_bit = TONE_SETTING.get(tone_label or "", "wearing a stylish coordinated outfit")
+    if slot == "wide_inset":
+        setting = "standing in an airy studio space with plain soft-toned background"
+    else:
+        setting = f"standing in a softly lit lifestyle interior, {tone_bit}"
+    extra = CATEGORY_FULL_EXTRA.get(category, "")
+    return (
+        f"{lead} "
+        f"Three-quarter length fashion photograph of {look}. "
+        f"Standing, camera framing from the top of her head down "
+        f"to at least mid-thigh so her full coordinated outfit and styling are "
+        f"clearly visible. {extra} {fashion}. {setting}. "
+        "Same woman as the identity reference but do NOT copy that photo's "
+        "frontal pose or eye contact. Head angle, expression, and gaze must "
+        "match the HEAD / GAZE lines above. The FACE may turn; the "
+        "wrist/hand plane stays square to the lens. "
         "Bare of jewelry (no necklace, earrings, rings, or bracelets). "
         "Square 1:1 crop, no text, no watermark."
     )
@@ -448,6 +669,42 @@ def _to_square_size(img: Image.Image, size: int = SIZE) -> Image.Image:
     top = (h - side) // 2
     cropped = img.crop((left, top, left + side, top + side))
     return cropped.resize((size, size), Image.Resampling.LANCZOS)
+
+
+def _crop_face_for_pulid(img: Image.Image) -> tuple[Image.Image, bool]:
+    """Tight face crop so facexlib can lock ID. Wide collarbone shots fail."""
+    from worker.face_anchor import detect_face_norm
+
+    face = detect_face_norm(img)
+    if face is None:
+        logger.warning("YuNet found no face on ID image — sending full frame")
+        return _to_square_size(img, FAL_GEN_SIZE), False
+    x, y, fw, fh = face
+    w, h = img.size
+    pad_x, pad_y = 0.55, 0.50
+    x0 = max(0, int((x - pad_x * fw) * w))
+    y0 = max(0, int((y - pad_y * fh) * h))
+    x1 = min(w, int((x + (1 + pad_x) * fw) * w))
+    y1 = min(h, int((y + (1 + 0.40) * fh) * h))
+    return _to_square_size(img.crop((x0, y0, x1, y1)), FAL_GEN_SIZE), True
+
+
+def _upload_jpeg(img: Image.Image) -> str:
+    import fal_client
+    import tempfile
+
+    fd, path = tempfile.mkstemp(suffix=".jpg")
+    os.close(fd)
+    try:
+        img.convert("RGB").save(path, "JPEG", quality=92)
+        return fal_client.upload_file(path)
+    finally:
+        Path(path).unlink(missing_ok=True)
+
+
+def _is_no_face_error(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return "no face" in msg or "facexlib" in msg or "id embeddings" in msg
 
 
 def _fal_subscribe(model: str, arguments: dict) -> dict:
@@ -514,31 +771,39 @@ def generate_scene_fal(
     negative_prompt: str | None = None,
     on_api_call: Callable[[], None] | None = None,
 ) -> Image.Image:
-    # PuLID's default id_weight=1 copies the reference portrait's
-    # expression. Tuck-down slots use a slightly looser lock.
     is_full = mode == "full"
     negative = negative_prompt or (NEGATIVE_FULL_BODY if is_full else NEGATIVE)
-    id_w = slot_id_weight(slot, mode) if slot else (0.55 if is_full else 0.62)
-    # Omit/0 makes every regen a copy of the first shot (same prompt + same face).
+    params = slot_pulid_params(slot, mode)
     seed = random.randint(1, 2_147_483_647)
-    logger.info("scene fal seed=%s slot=%s", seed, slot)
-    result = _fal_subscribe(
-        "fal-ai/flux-pulid",
-        {
-            "prompt": prompt,
-            "reference_image_url": reference_image_url,
-            "image_size": {"width": FAL_GEN_SIZE, "height": FAL_GEN_SIZE},
-            "num_inference_steps": 24,
-            "seed": seed,
-            # max_sequence_length=512: the default 128 truncated pose/hair.
-            "guidance_scale": 4.5 if is_full else 4.2,
-            "true_cfg": 1.8,
-            "max_sequence_length": "512",
-            "negative_prompt": negative,
-            "id_weight": id_w,
-            "enable_safety_checker": True,
-        },
+    logger.info(
+        "scene fal seed=%s slot=%s id_weight=%s true_cfg=%s guidance=%s",
+        seed,
+        slot,
+        params["id_weight"],
+        params["true_cfg"],
+        params["guidance_scale"],
     )
+    arguments = {
+        "prompt": prompt,
+        "reference_image_url": reference_image_url,
+        "image_size": {"width": FAL_GEN_SIZE, "height": FAL_GEN_SIZE},
+        "num_inference_steps": 28,
+        "seed": seed,
+        "max_sequence_length": "512",
+        "guidance_scale": params["guidance_scale"],
+        "true_cfg": params["true_cfg"],
+        "negative_prompt": negative,
+        "id_weight": params["id_weight"],
+        "enable_safety_checker": True,
+    }
+    try:
+        result = _fal_subscribe("fal-ai/flux-pulid", arguments)
+    except Exception as exc:
+        if not _is_no_face_error(exc):
+            raise
+        logger.warning("pulid no-face on %s — retrying once: %s", slot, exc)
+        arguments["seed"] = random.randint(1, 2_147_483_647)
+        result = _fal_subscribe("fal-ai/flux-pulid", arguments)
     if on_api_call:
         on_api_call()
     url = _image_url_from_result(result)
@@ -619,20 +884,29 @@ def generate_all_scenes(
 
     logger.info("FAL_KEY set — generating scenes via flux/dev + flux-pulid")
     cached = reuse_reference_path if reuse_reference_path and reuse_reference_path.is_file() else None
+    ref_url: str | None = None
     if cached:
-        import fal_client
-
-        ref_url = fal_client.upload_file(str(cached))
-        logger.info("reusing cached persona reference %s", cached)
-    else:
+        raw = Image.open(cached).convert("RGB")
+        id_img, found = _crop_face_for_pulid(raw)
+        if found:
+            id_img.save(cached, "JPEG", quality=92)
+            ref_url = _upload_jpeg(id_img)
+            logger.info("reusing cached persona reference (face-cropped) %s", cached)
+        else:
+            logger.warning("cached persona_ref has no detectable face — regenerating")
+            cached = None
+    if ref_url is None:
         ref_url = resolve_reference_url(
             persona_name, persona_image_key, on_api_call=on_api_call
         )
         try:
-            ref_img = _to_square_size(_download_image(ref_url), SIZE)
+            raw = _to_square_size(_download_image(ref_url), SIZE)
+            id_img, found = _crop_face_for_pulid(raw)
             ref_path = scene_dir / "persona_ref.jpg"
-            ref_img.save(ref_path, "JPEG", quality=90)
-            logger.info("saved persona reference %s", ref_path)
+            id_img.save(ref_path, "JPEG", quality=92)
+            if found:
+                ref_url = _upload_jpeg(id_img)
+            logger.info("saved persona reference found_face=%s %s", found, ref_path)
         except Exception:
             logger.exception("could not cache persona reference image")
 
@@ -640,7 +914,7 @@ def generate_all_scenes(
         tone_label = _tone_for_slot(slot, tone_names)
         prompt = build_scene_prompt(persona_name, slot, category, tone_label)
         mode = SCENE_META[slot]["mode"]
-        negative = slot_negative_prompt(slot, mode)
+        negative = slot_negative_prompt(slot, mode, category)
         logger.info("scene fal slot=%s mode=%s id_weight=%s prompt_len=%s", slot, mode, slot_id_weight(slot, mode), len(prompt))
         scenes[slot] = generate_scene_fal(
             prompt,

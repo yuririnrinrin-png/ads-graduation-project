@@ -42,6 +42,7 @@ function asTransform(value: unknown): SlotTransform {
     offsetX: typeof v.offsetX === "number" ? v.offsetX : 0,
     offsetY: typeof v.offsetY === "number" ? v.offsetY : 0,
     rotate: typeof v.rotate === "number" ? v.rotate : 0,
+    hidden: v.hidden === true,
   };
 }
 

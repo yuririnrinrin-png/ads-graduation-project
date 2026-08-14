@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
+  CATEGORY_MAIN_PHOTO_HINTS,
   CATEGORY_WEAR_HINTS,
   DETAIL_SLOTS,
   METALS,
@@ -171,7 +172,9 @@ export default function NewJobPage() {
                 同一商品・白〜淡色背景・角度違い。順序がディテール1〜3。サムネを選ぶとメイン切替。JPEG / PNG / WebP・各12MBまで。
               </p>
               <p className="muted" style={{ fontSize: "0.75rem", margin: "0.35rem 0 0" }}>
-                着用に使うメイン写真は、できるだけ正面から撮った1枚を選んでください。斜めでも生成はできます。
+                {category
+                  ? CATEGORY_MAIN_PHOTO_HINTS[category]
+                  : "着用に使うメイン写真は、できるだけ正面から撮った1枚を選んでください。斜めでも生成はできます。"}
               </p>
             </div>
 

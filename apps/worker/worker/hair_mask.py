@@ -1,9 +1,9 @@
 """Hair overlay for tucked-down slots (wear_cafe, wide_inset).
 
-Jewelry is pasted as a flat cutout. On those two slots hair may fall behind
-the ears onto the neck/chest, so we put detected hair pixels back on top.
-If the mask is unusable we return None and compositing skips occlusion
-(prompts already keep hair off the collarbones).
+Jewelry is pasted as a flat cutout. On cafe/wide necklace shots, hair may
+fall onto the neck/chest, so we put detected hair pixels back on top.
+Earrings skip this — overlaying hair on the earlobes hides the product
+after 完了. If the mask is unusable we return None.
 
 Must stay in sync with packages/shared HAIR_OVERLAY_SLOTS.
 """

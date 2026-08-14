@@ -892,16 +892,24 @@ select {
   cursor: grabbing;
 }
 
+.edit-jewel-ghost {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px dashed rgba(176, 141, 87, 0.75);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
 .edit-resize-handle {
   position: absolute;
-  width: 1.1rem;
-  height: 1.1rem;
-  margin-left: -0.55rem;
-  margin-top: -0.55rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-left: -0.275rem;
+  margin-top: -0.275rem;
   border-radius: 999px;
   background: var(--gold);
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 1.5px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   cursor: nwse-resize;
 }
 

@@ -24,6 +24,7 @@ const transformItemSchema = z.object({
   offsetX: z.number().min(-TRANSFORM_OFFSET_LIMIT).max(TRANSFORM_OFFSET_LIMIT),
   offsetY: z.number().min(-TRANSFORM_OFFSET_LIMIT).max(TRANSFORM_OFFSET_LIMIT),
   rotate: z.number().min(-TRANSFORM_ROTATE_LIMIT).max(TRANSFORM_ROTATE_LIMIT).optional().default(0),
+  hidden: z.boolean().optional().default(false),
 });
 
 const bodySchema = z.object({
@@ -64,6 +65,16 @@ export async function PATCH(req: Request, ctx: Ctx) {
     );
   }
   const transforms = parsed.data.transforms;
+  if (
+    job.category === "earring" &&
+    transforms.length > 1 &&
+    transforms.every((t) => t.hidden)
+  ) {
+    return NextResponse.json(
+      { error: "Earrings cannot all be hidden" },
+      { status: 400 }
+    );
+  }
 
   const scene = await prisma.jobAsset.findFirst({
     where: { jobId: id, slotKey: slot, kind: "scene" },
@@ -103,7 +114,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
       body,
       transforms,
       insetPath,
-      hairOverlayPath: hairOverlay?.storageKey,
+      hairOverlayPath:
+        job.category === "necklace" ? hairOverlay?.storageKey : undefined,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Recomposite failed";

@@ -40,7 +40,10 @@ _EAR_OUTSET = 0.10
 
 
 def _default_transforms(count: int) -> list[dict]:
-    return [{"scale": 1.0, "offsetX": 0, "offsetY": 0, "rotate": 0} for _ in range(count)]
+    return [
+        {"scale": 1.0, "offsetX": 0, "offsetY": 0, "rotate": 0, "hidden": False}
+        for _ in range(count)
+    ]
 
 
 def _clamp_offset(value: float) -> int:
@@ -150,6 +153,7 @@ def transforms_from_face(
                 "offsetX": _clamp_offset((tx - float(anchor["x"])) * SIZE),
                 "offsetY": _clamp_offset((ty - float(anchor["y"])) * SIZE),
                 "rotate": 0,
+                "hidden": False,
             }
         )
     return out

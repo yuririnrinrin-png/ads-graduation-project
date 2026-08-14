@@ -59,8 +59,8 @@ CATEGORY_ANCHORS = {
         {"x": 0.4, "y": 0.32, "scale": 0.09, "rotate": 6},
         {"x": 0.6, "y": 0.32, "scale": 0.09, "rotate": -6},
     ],
-    "ring": [{"x": 0.58, "y": 0.66, "scale": 0.13, "rotate": 0}],
-    "bracelet": [{"x": 0.46, "y": 0.55, "scale": 0.2, "rotate": 0}],
+    "ring": [{"x": 0.58, "y": 0.70, "scale": 0.11, "rotate": 0}],
+    "bracelet": [{"x": 0.48, "y": 0.62, "scale": 0.18, "rotate": 0}],
 }
 BODY_ANCHORS = {
     "necklace": [{"x": 0.5, "y": 0.32, "scale": 0.14, "rotate": 4}],
@@ -68,8 +68,8 @@ BODY_ANCHORS = {
         {"x": 0.46, "y": 0.22, "scale": 0.045, "rotate": 4},
         {"x": 0.54, "y": 0.22, "scale": 0.045, "rotate": -4},
     ],
-    "ring": [{"x": 0.55, "y": 0.58, "scale": 0.07, "rotate": 0}],
-    "bracelet": [{"x": 0.48, "y": 0.48, "scale": 0.1, "rotate": 0}],
+    "ring": [{"x": 0.56, "y": 0.62, "scale": 0.06, "rotate": 0}],
+    "bracelet": [{"x": 0.48, "y": 0.58, "scale": 0.09, "rotate": 0}],
 }
 
 SLOT_DETAIL = ["detail_a", "detail_b", "detail_c"]
@@ -345,23 +345,41 @@ def match_jewel_to_scene(
     return Image.fromarray(arr, "RGBA")
 
 
-def prepare_hair_overlay(conn, job_id: str, slot: str, scene: Image.Image) -> Image.Image | None:
+def _clear_hair_overlay_asset(conn, job_id: str, slot: str, out) -> None:
+    if out.is_file():
+        out.unlink()
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM "JobAsset"
+            WHERE "jobId" = %s AND "slotKey" = %s AND kind = 'hair_overlay'
+            """,
+            (job_id, slot),
+        )
+    conn.commit()
+
+
+def prepare_hair_overlay(
+    conn,
+    job_id: str,
+    slot: str,
+    scene: Image.Image,
+    category: str | None = None,
+) -> Image.Image | None:
+    """Hair-over-jewelry is for necklaces on tucked-down slots only.
+
+    Putting hair pixels on top of earrings hides them after 完了 (the edit
+    canvas shows the cutout without the overlay, so it looks like a vanish).
+    """
     out = job_dir(job_id) / "scene" / f"hair_{slot}.png"
     if slot not in HAIR_OVERLAY_SLOTS:
         return None
+    if category and category != "necklace":
+        _clear_hair_overlay_asset(conn, job_id, slot, out)
+        return None
     overlay = build_hair_overlay(scene)
     if overlay is None:
-        if out.is_file():
-            out.unlink()
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                DELETE FROM "JobAsset"
-                WHERE "jobId" = %s AND "slotKey" = %s AND kind = 'hair_overlay'
-                """,
-                (job_id, slot),
-            )
-        conn.commit()
+        _clear_hair_overlay_asset(conn, job_id, slot, out)
         return None
     overlay.save(out, "PNG")
     upsert_asset(conn, job_id, slot, "hair_overlay", str(out))
@@ -390,7 +408,7 @@ def compose_detail(cutout: Image.Image, background: Image.Image, metal: str) -> 
 
 
 def default_transform() -> dict:
-    return {"scale": 1.0, "offsetX": 0, "offsetY": 0, "rotate": 0}
+    return {"scale": 1.0, "offsetX": 0, "offsetY": 0, "rotate": 0, "hidden": False}
 
 
 def default_transforms(count: int) -> list[dict]:
@@ -422,6 +440,8 @@ def composite_on_scene(
     # transform so left/right can be sized/placed independently.
     for i, anchor in enumerate(anchors):
         t = ts[i] if i < len(ts) else default_transform()
+        if t.get("hidden"):
+            continue
         jewel_w = max(24, int(SIZE * anchor["scale"] * float(t.get("scale", 1))))
         fitted = ImageOps.contain(tinted, (jewel_w, jewel_w))
         if i % 2 == 1:
@@ -563,7 +583,7 @@ def composite_slot(
         ts = load_preview_transform(conn, job_id, slot)
     if ts is None:
         ts = transforms_from_face(scene, get_anchors(job["category"], body), job["category"])
-    overlay = prepare_hair_overlay(conn, job_id, slot, scene)
+    overlay = prepare_hair_overlay(conn, job_id, slot, scene, job["category"])
     img = composite_on_scene(
         scene,
         main_cut,
@@ -713,7 +733,9 @@ def run_regen(conn, job_id: str, job: dict, slots: list[str], dirs: dict[str, Pa
         ts = load_preview_transform(conn, job_id, "wide_inset") or transforms_from_face(
             scene, get_anchors(job["category"], True), job["category"]
         )
-        overlay = prepare_hair_overlay(conn, job_id, "wide_inset", scene)
+        overlay = prepare_hair_overlay(
+            conn, job_id, "wide_inset", scene, job["category"]
+        )
         wide_rgb = composite_on_scene(
             scene,
             main_cut,
@@ -802,7 +824,9 @@ def run_job(
         wide_ts = transforms_from_face(
             scenes["wide_inset"], get_anchors(job["category"], True), job["category"]
         )
-        wide_overlay = prepare_hair_overlay(conn, job_id, "wide_inset", scenes["wide_inset"])
+        wide_overlay = prepare_hair_overlay(
+            conn, job_id, "wide_inset", scenes["wide_inset"], job["category"]
+        )
         wide = composite_on_scene(
             scenes["wide_inset"],
             main_cut,

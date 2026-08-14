@@ -42,6 +42,7 @@ function clampTransform(t: SlotTransform): SlotTransform {
     offsetX: Math.min(MAX_OFFSET, Math.max(-MAX_OFFSET, t.offsetX)),
     offsetY: Math.min(MAX_OFFSET, Math.max(-MAX_OFFSET, t.offsetY)),
     rotate: Math.min(MAX_ROTATE, Math.max(-MAX_ROTATE, t.rotate ?? 0)),
+    hidden: Boolean(t.hidden),
   };
 }
 
@@ -148,7 +149,25 @@ export function SlotCardClient({
   }
 
   function reset() {
-    const next = anchors.map(() => DEFAULT_TRANSFORM);
+    const next = anchors.map(() => ({ ...DEFAULT_TRANSFORM }));
+    setTransforms(next);
+    void commit(next);
+  }
+
+  function toggleHidden(i: number) {
+    if (pending) return;
+    const current = transforms[i];
+    if (!current) return;
+    if (!current.hidden) {
+      const visible = transforms.filter((t) => !t.hidden).length;
+      if (visible <= 1) {
+        window.alert("両方消すことはできません。片方だけ消せます。");
+        return;
+      }
+    }
+    const next = transforms.map((t, idx) =>
+      idx === i ? { ...t, hidden: !t.hidden } : t
+    );
     setTransforms(next);
     void commit(next);
   }
@@ -242,7 +261,9 @@ export function SlotCardClient({
             style={{ fontSize: "0.75rem", width: "100%", padding: "0.4rem", marginTop: "0.5rem" }}
             onClick={() => setEditing(true)}
           >
-            大きさ・位置・回転を調整
+            {category === "earring"
+              ? "大きさ・位置・回転・片方を消す"
+              : "大きさ・位置・回転を調整"}
           </button>
         ) : null}
       </div>
@@ -273,6 +294,20 @@ export function SlotCardClient({
           const cxPct = anchor.x * 100 + (t.offsetX / CANVAS_SIZE) * 100;
           const cyPct = anchor.y * 100 + (t.offsetY / CANVAS_SIZE) * 100;
           const deg = (anchor.rotate ?? 0) + (t.rotate ?? 0);
+          if (t.hidden) {
+            return (
+              <span
+                key={i}
+                className="edit-jewel-ghost"
+                style={{
+                  left: `${cxPct - widthPct / 2}%`,
+                  top: `${cyPct - widthPct / 2}%`,
+                  width: `${widthPct}%`,
+                  height: `${widthPct}%`,
+                }}
+              />
+            );
+          }
           return (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -293,6 +328,7 @@ export function SlotCardClient({
         })}
         {anchors.map((anchor, i) => {
           const t = transforms[i] ?? DEFAULT_TRANSFORM;
+          if (t.hidden) return null;
           const widthPct = anchor.scale * t.scale * 100;
           const cxPct = anchor.x * 100 + (t.offsetX / CANVAS_SIZE) * 100;
           const cyPct = anchor.y * 100 + (t.offsetY / CANVAS_SIZE) * 100;
@@ -313,7 +349,30 @@ export function SlotCardClient({
         {multi
           ? "左右それぞれドラッグで移動 · 丸のつまみでサイズ · スライダーで回転"
           : "ジュエリーをドラッグで移動 · 右下の丸で大きさ · スライダーで回転"}
+        {category === "earring"
+          ? " · 横顔では見えない側を消せます"
+          : ""}
       </p>
+      {category === "earring" ? (
+        <div className="row" style={{ gap: "0.35rem", marginTop: "0.45rem" }}>
+          {anchors.map((_, i) => {
+            const t = transforms[i] ?? DEFAULT_TRANSFORM;
+            const side = i === 0 ? "左" : "右";
+            return (
+              <button
+                key={i}
+                type="button"
+                className="btn btn-ghost"
+                style={{ fontSize: "0.75rem", flex: 1, padding: "0.4rem" }}
+                disabled={pending}
+                onClick={() => toggleHidden(i)}
+              >
+                {t.hidden ? `${side}を戻す` : `${side}を消す`}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
       <div className="row" style={{ gap: "0.65rem", marginTop: "0.45rem", alignItems: "center" }}>
         {anchors.map((_, i) => {
           const t = transforms[i] ?? DEFAULT_TRANSFORM;
@@ -331,7 +390,7 @@ export function SlotCardClient({
                 max={MAX_ROTATE}
                 step={1}
                 value={t.rotate ?? 0}
-                disabled={pending}
+                disabled={pending || t.hidden}
                 aria-label={label}
                 onChange={(e) => {
                   const rotate = Number(e.target.value);

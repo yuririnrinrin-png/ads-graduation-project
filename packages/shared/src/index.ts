@@ -20,8 +20,16 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 export const CATEGORY_WEAR_HINTS: Record<Category, string> = {
   necklace: "着用シーンでは胸元〜顔（バストアップ）を写します",
   earring: "着用シーンでは顔まわりを写します",
-  ring: "着用シーンでは手元を写します",
-  bracelet: "着用シーンでは腕まわりを写します",
+  ring: "着用4枚は手元（指）が主役です。手の甲をカメラに向けます。顔は上側に残します",
+  bracelet: "着用4枚は手首をカメラ正面に向けます。腕は組みません。顔は上側に残します",
+};
+
+/** Extra main-photo hint on the new-job screen (does not block generate). */
+export const CATEGORY_MAIN_PHOTO_HINTS: Record<Category, string> = {
+  necklace: "着用に使うメイン写真は、できるだけ正面から撮った1枚を選んでください。斜めでも生成はできます。",
+  earring: "着用に使うメイン写真は、できるだけ正面から撮った1枚を選んでください。斜めでも生成はできます。",
+  ring: "着用に使うメイン写真は、指にはめたときと同じ向き（少し楕円に見える角度）が合いやすいです。真上の真円だと貼り付けが目立ちます。",
+  bracelet: "着用に使うメイン写真は、手首に付けたときと同じ向き（少し楕円に見える角度）が合いやすいです。真上の円だと貼り付けが目立ちます。",
 };
 
 export const METALS = ["YG", "WG", "PG"] as const;
@@ -149,6 +157,8 @@ export type SlotTransform = {
   offsetY: number;
   /** Extra clockwise degrees on top of the category anchor's baseline tilt. */
   rotate: number;
+  /** Earrings only: skip this ear in composite (profile shots). */
+  hidden?: boolean;
 };
 
 export const DEFAULT_TRANSFORM: SlotTransform = {
@@ -156,6 +166,7 @@ export const DEFAULT_TRANSFORM: SlotTransform = {
   offsetX: 0,
   offsetY: 0,
   rotate: 0,
+  hidden: false,
 };
 
 /**
@@ -188,8 +199,8 @@ export const CATEGORY_ANCHORS: Record<Category, Anchor[]> = {
     { x: 0.4, y: 0.32, scale: 0.09, rotate: 6 },
     { x: 0.6, y: 0.32, scale: 0.09, rotate: -6 },
   ],
-  ring: [{ x: 0.58, y: 0.66, scale: 0.13 }],
-  bracelet: [{ x: 0.46, y: 0.55, scale: 0.2 }],
+  ring: [{ x: 0.58, y: 0.70, scale: 0.11 }],
+  bracelet: [{ x: 0.48, y: 0.62, scale: 0.18 }],
 };
 
 /** Full-body frames use a slightly lower / smaller default. */
@@ -199,8 +210,8 @@ export const BODY_ANCHORS: Record<Category, Anchor[]> = {
     { x: 0.46, y: 0.22, scale: 0.045, rotate: 4 },
     { x: 0.54, y: 0.22, scale: 0.045, rotate: -4 },
   ],
-  ring: [{ x: 0.55, y: 0.58, scale: 0.07 }],
-  bracelet: [{ x: 0.48, y: 0.48, scale: 0.1 }],
+  ring: [{ x: 0.56, y: 0.62, scale: 0.06 }],
+  bracelet: [{ x: 0.48, y: 0.58, scale: 0.09 }],
 };
 
 export const DETAIL_SLOTS = ["detail_a", "detail_b", "detail_c"] as const;
@@ -223,7 +234,8 @@ export const COMPOSITE_SLOTS = [
 /** Tucked-down slots: hair pixels composited on top of jewelry when a mask exists. */
 export const HAIR_OVERLAY_SLOTS = ["wear_cafe", "wide_inset"] as const;
 
-export function usesHairOverlay(slot: string): boolean {
+export function usesHairOverlay(slot: string, category?: string): boolean {
+  if (category && category !== "necklace") return false;
   return (HAIR_OVERLAY_SLOTS as readonly string[]).includes(slot);
 }
 

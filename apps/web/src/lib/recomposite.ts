@@ -169,6 +169,7 @@ export async function recompositeSlot(opts: {
   for (let i = 0; i < anchors.length; i++) {
     const anchor = anchors[i];
     const t = opts.transforms?.[i] ?? DEFAULT_TRANSFORM;
+    if (t.hidden) continue;
     const jewelW = Math.max(24, Math.round(SIZE * anchor.scale * t.scale));
     let jewelPipeline = sharp(baseCutoutBuf).resize(jewelW, jewelW, { fit: "inside" });
     if (i % 2 === 1) {
