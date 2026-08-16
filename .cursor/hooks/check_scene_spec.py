@@ -200,12 +200,22 @@ def run_checks() -> list[str]:
         _fail("MAX_SCENE_TRIES must retry failed scene QA", failures)
 
     src = (ROOT / "apps" / "worker" / "worker" / "scene_gen.py").read_text(encoding="utf-8")
+    if "_pulid_id_has_face" not in src:
+        _fail("cached persona_ref must be checked for two eyes before PuLID")
+    if "id_img.save(cached" in src:
+        _fail("must not re-crop and overwrite cached persona_ref (collapses to a nose)")
+    if "PulidNoFaceError" not in src or "persona_ref_src" not in src:
+        _fail("PuLID facexlib fail must rebuild ID from persona_ref_src, not recrop cache")
     if "_generate_scene_until_qa" not in src or "evaluate_scene" not in src:
         _fail("runtime image QA retry missing from generate_all_scenes", failures)
     if "RETRY: do not copy the identity headshot" not in src:
         _fail("QA retry must strengthen the prompt, not only change seed", failures)
     if "generate_scene_flux_dev" not in src or "pulid exhausted" not in src:
         _fail("QA must not soft-accept; flux/dev fallback required after PuLID fails", failures)
+    if "failed after retries" not in src:
+        _fail("scene QA must raise instead of keeping a failing frame", failures)
+    if "skip_pulid" not in src:
+        _fail("ring/bracelet full-body must skip PuLID (it copies crossed-arm busts)", failures)
     qa = (ROOT / "apps" / "worker" / "worker" / "scene_qa.py").read_text(encoding="utf-8")
     if "face too large for hand-hero" not in qa:
         _fail("scene_qa must reject portrait crops on ring/bracelet wear", failures)

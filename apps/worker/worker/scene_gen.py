@@ -78,7 +78,7 @@ WEAR_SETTING = {
     "wear_date": (
         "The WOMAN is the only sharp subject, closest to the camera, in focus. "
         "A man sits opposite in the BACKGROUND: small, out of focus, we may "
-        "glimpse a blurred silhouette. He wears NO watch and NO jewelry. "
+        "glimpse a blurred silhouette. "
         "FORBIDDEN: man's hands in the foreground, camera focused on the man, "
         "woman blurred, shot from behind the man. Fine-dining table, candle, "
         "two wine glasses. Her TORSO stays square to the lens (under 15 degrees)"
@@ -325,8 +325,8 @@ CATEGORY_FRAMING = {
 }
 
 HAND_PRESENT_RULE = {
-    "ring": "Backs of the hands face the lens, fingers slightly spread, ring finger empty. Bare wrists, no watch.",
-    "bracelet": "Inner wrist faces the lens almost flat. Bare forearm, no watch, no cuff.",
+    "ring": "Backs of the hands face the lens, fingers slightly spread, ring finger empty. Uncovered empty wrists.",
+    "bracelet": "Inner wrist faces the lens almost flat. Bare forearm, uncovered empty wrists.",
 }
 
 WEAR_HAND_POSE = {
@@ -353,7 +353,7 @@ WEAR_SETTING_HAND = {
     "wear_date": (
         "She is sharp in the foreground, her own forearm on the table. "
         "A man is small and blurred in the BACKGROUND only. "
-        "FORBIDDEN: man's hands or watch in the foreground, woman out of focus"
+        "FORBIDDEN: man's hands in the foreground, woman out of focus"
     ),
     "wear_holiday": "wooden pier railing, golden hour, ocean behind",
 }
@@ -367,49 +367,48 @@ TONE_PLACE_HAND = {
 
 WEAR_FASHION_HAND = {
     "ring": "short sleeves or open jacket, bare fingers, no gloves, no rings",
-    "bracelet": "sleeves rolled to mid-forearm, no watch, no cuff over the wrist",
+    "bracelet": "sleeves rolled to mid-forearm, uncovered empty wrists",
 }
 
 CATEGORY_FULL_EXTRA = {
     "ring": (
-        "FRONT-FACING full-length catalog photo. Camera in front of her chest. "
-        "Head at the top, every fingertip in the lower half with space below. "
-        "Never from behind, never waist-up."
+        "Head-to-toe standing catalog photo, 35mm, camera several meters back. "
+        "Head near the top edge, shoes visible at the bottom edge. "
+        "Every fingertip visible. Not a waist-up crop."
     ),
     "bracelet": (
-        "FRONT-FACING full-length catalog photo. Camera in front of her chest. "
-        "Head at the top, both wrists in the lower half with space below. "
-        "Never from behind, never waist-up, never arms crossed."
+        "Head-to-toe standing catalog photo, 35mm, camera several meters back. "
+        "Head near the top edge, shoes visible at the bottom edge. "
+        "Both wrists visible. Not a waist-up crop."
     ),
 }
 
 FULL_HAND_POSE = {
     "ring": {
         "body_1": (
-            "LEFT arm hangs; RIGHT hand is in front of her hip, fingers visible. "
-            "NEVER arms crossed, NEVER both hands on the waist at once."
+            "LEFT arm hangs straight with a gap beside the torso; "
+            "RIGHT hand rests by her hip, fingers visible."
         ),
         "body_2": (
-            "Both arms hang straight at her sides, palms slightly forward. "
-            "NEVER arms crossed."
+            "Both arms hang straight at her sides, palms slightly forward, "
+            "a gap of clothing between each arm and the torso."
         ),
         "wide_inset": (
-            "One hand rests on her thigh, the other hangs. Fingertips visible. "
-            "NEVER arms crossed."
+            "One hand rests on her thigh, the other hangs straight. Fingertips visible."
         ),
     },
     "bracelet": {
         "body_1": (
-            "LEFT arm hangs straight; RIGHT inner wrist is in front of her hip "
-            "toward the camera. NEVER arms crossed, NEVER hands on opposite elbows."
+            "LEFT arm hangs straight with a gap beside the torso; "
+            "RIGHT inner wrist rests by her hip, facing the camera."
         ),
         "body_2": (
-            "Both arms hang at her sides like a standing catalog pose, "
-            "both wrists uncovered. NEVER arms crossed."
+            "Both arms hang straight at her sides like a standing catalog pose, "
+            "a gap of clothing between each arm and the torso, both wrists uncovered."
         ),
         "wide_inset": (
-            "One wrist in front of her thigh, the other arm hanging. "
-            "Both wrists visible. NEVER arms crossed."
+            "One wrist rests by her thigh, the other arm hangs straight. "
+            "Both wrists visible."
         ),
     },
 }
@@ -486,8 +485,7 @@ NEGATIVE = (
 )
 
 ACCESSORY_BAN = (
-    "BARE of accessories: no watch, no wristwatch, no necklace, no earrings, "
-    "no rings, no bracelet, no jewelry"
+    "BARE of accessories: uncovered empty wrists, bare neck, bare earlobes"
 )
 
 NEGATIVE_BUST = NEGATIVE + (
@@ -499,7 +497,9 @@ NEGATIVE_BUST = NEGATIVE + (
 # still be out of frame — that's fine, we only need the styling to be visible).
 # Turtleneck is allowed on full-body / wide shots.
 NEGATIVE_FULL_BODY = NEGATIVE + (
-    ", extreme close-up, tight headshot, face-only crop, cut off above the waist"
+    ", extreme close-up, tight headshot, face-only crop, cut off above the waist, "
+    "waist-up, three-quarter crop, folded arms, arms across the chest, "
+    "watch on wrist, timepiece"
 )
 
 
@@ -726,7 +726,7 @@ def _build_hand_scene_prompt(
             f"Setting: {setting}. "
             "Do not copy the identity photo's head-and-shoulders crop. "
             "Hands are the largest subject. Face stays small at the edge. "
-            "No jewelry. No watch. No text."
+            "No text."
         )
 
     place = TONE_PLACE_HAND.get(tone_label or "", "a softly lit interior")
@@ -741,7 +741,7 @@ def _build_hand_scene_prompt(
         f"{ACCESSORY_BAN} {extra} {present} {standing_hands} {pose} {hair} "
         f"Full-length photo of {look}. {fashion}. {setting}. "
         "Do not copy the identity photo's tight crop. "
-        "Fingertips stay in frame and stay obvious. No jewelry. No watch. No text."
+        "Fingertips stay in frame and stay obvious. No text."
     )
 
 
@@ -761,8 +761,23 @@ def _to_square_size(img: Image.Image, size: int = SIZE) -> Image.Image:
     return cropped.resize((size, size), Image.Resampling.LANCZOS)
 
 
+def _pulid_id_has_face(img: Image.Image) -> bool:
+    """True when the ID photo still has two eyes (facexlib can align)."""
+    from worker.face_anchor import detect_faces_detail
+
+    faces = detect_faces_detail(img)
+    if not faces:
+        return False
+    f = faces[0]
+    return f["eye_span"] >= 0.28 and f["h"] >= 0.22
+
+
 def _crop_face_for_pulid(img: Image.Image) -> tuple[Image.Image, bool]:
-    """Tight face crop so facexlib can lock ID. Wide collarbone shots fail."""
+    """One face crop so facexlib can lock ID. Wide collarbone shots fail.
+
+    Never run this on an already-saved persona_ref.jpg — a second crop
+    shrinks to nose/mouth and PuLID returns facexlib align face fail.
+    """
     from worker.face_anchor import detect_face_norm
 
     face = detect_face_norm(img)
@@ -771,12 +786,25 @@ def _crop_face_for_pulid(img: Image.Image) -> tuple[Image.Image, bool]:
         return _to_square_size(img, FAL_GEN_SIZE), False
     x, y, fw, fh = face
     w, h = img.size
-    pad_x, pad_y = 0.22, 0.18
+    pad_x, pad_top, pad_bot = 0.35, 0.40, 0.28
     x0 = max(0, int((x - pad_x * fw) * w))
-    y0 = max(0, int((y - pad_y * fh) * h))
+    y0 = max(0, int((y - pad_top * fh) * h))
     x1 = min(w, int((x + (1 + pad_x) * fw) * w))
-    y1 = min(h, int((y + (1 + 0.22) * fh) * h))
-    return _to_square_size(img.crop((x0, y0, x1, y1)), FAL_GEN_SIZE), True
+    y1 = min(h, int((y + (1 + pad_bot) * fh) * h))
+    cropped = _to_square_size(img.crop((x0, y0, x1, y1)), FAL_GEN_SIZE)
+    if not _pulid_id_has_face(cropped):
+        logger.warning("face crop lost eyes — using wider ID frame")
+        return _to_square_size(img, FAL_GEN_SIZE), _pulid_id_has_face(img)
+    return cropped, True
+
+
+def _is_no_face_error(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return "no face" in msg or "facexlib" in msg or "id embeddings" in msg
+
+
+class PulidNoFaceError(RuntimeError):
+    """PuLID could not align the ID photo (usually a too-tight crop)."""
 
 
 def _upload_jpeg(img: Image.Image) -> str:
@@ -790,11 +818,6 @@ def _upload_jpeg(img: Image.Image) -> str:
         return fal_client.upload_file(path)
     finally:
         Path(path).unlink(missing_ok=True)
-
-
-def _is_no_face_error(exc: BaseException) -> bool:
-    msg = str(exc).lower()
-    return "no face" in msg or "facexlib" in msg or "id embeddings" in msg
 
 
 def _fal_subscribe(model: str, arguments: dict) -> dict:
@@ -898,7 +921,12 @@ def generate_scene_fal(
             raise
         logger.warning("pulid no-face on %s — retrying once: %s", slot, exc)
         arguments["seed"] = random.randint(1, 2_147_483_647)
-        result = _fal_subscribe("fal-ai/flux-pulid", arguments)
+        try:
+            result = _fal_subscribe("fal-ai/flux-pulid", arguments)
+        except Exception as retry_exc:
+            if _is_no_face_error(retry_exc):
+                raise PulidNoFaceError(str(retry_exc)) from retry_exc
+            raise
     if on_api_call:
         on_api_call()
     url = _image_url_from_result(result)
@@ -979,6 +1007,25 @@ def render_scene_local(
     return img
 
 
+def _save_and_upload_persona_ref(
+    raw: Image.Image,
+    scene_dir: Path,
+    *,
+    crop: bool,
+) -> str:
+    src_path = scene_dir / "persona_ref_src.jpg"
+    raw.save(src_path, "JPEG", quality=92)
+    if crop:
+        id_img, found = _crop_face_for_pulid(raw)
+    else:
+        id_img, found = _to_square_size(raw, FAL_GEN_SIZE), _pulid_id_has_face(raw)
+    ref_path = scene_dir / "persona_ref.jpg"
+    id_img.save(ref_path, "JPEG", quality=92)
+    url = _upload_jpeg(id_img)
+    logger.info("saved persona reference crop=%s found_face=%s %s", crop, found, ref_path)
+    return url
+
+
 def generate_all_scenes(
     *,
     persona_name: str,
@@ -1006,16 +1053,17 @@ def generate_all_scenes(
 
     logger.info("FAL_KEY set — generating scenes via flux/dev + flux-pulid")
     cached = reuse_reference_path if reuse_reference_path and reuse_reference_path.is_file() else None
+    src_path = scene_dir / "persona_ref_src.jpg"
     ref_url: str | None = None
     if cached:
         raw = Image.open(cached).convert("RGB")
-        id_img, found = _crop_face_for_pulid(raw)
-        if found:
-            id_img.save(cached, "JPEG", quality=92)
-            ref_url = _upload_jpeg(id_img)
-            logger.info("reusing cached persona reference (face-cropped) %s", cached)
+        # Already cropped once. Cropping again collapses to a nose close-up.
+        if _pulid_id_has_face(raw):
+            ref_url = _upload_jpeg(raw)
+            logger.info("reusing cached persona reference %s", cached)
         else:
-            logger.warning("cached persona_ref has no detectable face — regenerating")
+            logger.warning("cached persona_ref is not a usable ID face — regenerating")
+            cached.unlink(missing_ok=True)
             cached = None
     if ref_url is None:
         ref_url = resolve_reference_url(
@@ -1023,34 +1071,57 @@ def generate_all_scenes(
         )
         try:
             raw = _to_square_size(_download_image(ref_url), SIZE)
-            id_img, found = _crop_face_for_pulid(raw)
-            ref_path = scene_dir / "persona_ref.jpg"
-            id_img.save(ref_path, "JPEG", quality=92)
-            if found:
-                ref_url = _upload_jpeg(id_img)
-            logger.info("saved persona reference found_face=%s %s", found, ref_path)
+            ref_url = _save_and_upload_persona_ref(raw, scene_dir, crop=True)
         except Exception:
             logger.exception("could not cache persona reference image")
 
+    rebuilt_id = False
     for slot in slots:
         tone_label = _tone_for_slot(slot, tone_names)
         prompt = build_scene_prompt(persona_name, slot, category, tone_label)
         mode = SCENE_META[slot]["mode"]
         negative = slot_negative_prompt(slot, mode, category)
         logger.info("scene fal slot=%s mode=%s id_weight=%s prompt_len=%s", slot, mode, slot_id_weight(slot, mode, category), len(prompt))
-        scenes[slot] = _generate_scene_until_qa(
-            prompt,
-            ref_url,
-            mode=mode,
-            slot=slot,
-            category=category,
-            negative_prompt=negative,
-            on_api_call=on_api_call,
-        )
+        while True:
+            try:
+                scenes[slot] = _generate_scene_until_qa(
+                    prompt,
+                    ref_url,
+                    mode=mode,
+                    slot=slot,
+                    category=category,
+                    negative_prompt=negative,
+                    on_api_call=on_api_call,
+                )
+                break
+            except PulidNoFaceError as exc:
+                if rebuilt_id:
+                    raise
+                logger.warning("PuLID rejected ID photo — using wider reference: %s", exc)
+                if src_path.is_file():
+                    raw = Image.open(src_path).convert("RGB")
+                    ref_url = _save_and_upload_persona_ref(raw, scene_dir, crop=False)
+                else:
+                    fresh = resolve_reference_url(
+                        persona_name, persona_image_key, on_api_call=on_api_call
+                    )
+                    raw = _to_square_size(_download_image(fresh), SIZE)
+                    ref_url = _save_and_upload_persona_ref(raw, scene_dir, crop=False)
+                rebuilt_id = True
     return scenes
 
 
 MAX_SCENE_TRIES = 3
+MAX_FLUX_TRIES = 4
+
+
+def _standing_catalog_lead() -> str:
+    return (
+        "Full-length standing fashion catalog photograph, 35mm lens, "
+        "camera several meters away. Head near the top edge, shoes visible "
+        "at the bottom edge. Both arms hang straight down with a gap of "
+        "clothing between each arm and the torso. Uncovered empty wrists. "
+    )
 
 
 def _generate_scene_until_qa(
@@ -1065,45 +1136,59 @@ def _generate_scene_until_qa(
 ) -> Image.Image:
     from worker.scene_qa import evaluate_scene
 
-    last: Image.Image | None = None
-    for attempt in range(MAX_SCENE_TRIES):
-        scale = 1.0 if attempt == 0 else max(0.45, 0.75**attempt)
-        use_prompt = prompt
-        if attempt > 0:
-            use_prompt = (
-                "RETRY: do not copy the identity headshot. "
-                + prompt
+    skip_pulid = mode == "full" and category in HAND_FOCUS_CATEGORIES
+    last_fails: list[str] = []
+    if not skip_pulid:
+        for attempt in range(MAX_SCENE_TRIES):
+            scale = 1.0 if attempt == 0 else max(0.45, 0.75**attempt)
+            use_prompt = prompt
+            if attempt > 0:
+                use_prompt = (
+                    "RETRY: do not copy the identity headshot. "
+                    + prompt
+                )
+            img = generate_scene_fal(
+                use_prompt,
+                ref_url,
+                mode=mode,
+                slot=slot,
+                category=category,
+                negative_prompt=negative_prompt,
+                on_api_call=on_api_call,
+                id_weight_scale=scale,
             )
-        img = generate_scene_fal(
+            fails = evaluate_scene(img, slot, category)
+            if not fails:
+                return img
+            last_fails = fails
+            logger.warning(
+                "scene qa slot=%s try=%s/%s %s",
+                slot, attempt + 1, MAX_SCENE_TRIES, fails,
+            )
+        logger.warning("scene qa slot=%s pulid exhausted — flux/dev fallback", slot)
+
+    for attempt in range(MAX_FLUX_TRIES):
+        use_prompt = prompt
+        if mode == "full":
+            use_prompt = _standing_catalog_lead() + prompt
+        elif attempt > 0:
+            use_prompt = "RETRY: do not copy the identity headshot. " + prompt
+        img = generate_scene_flux_dev(
             use_prompt,
-            ref_url,
-            mode=mode,
-            slot=slot,
-            category=category,
             negative_prompt=negative_prompt,
             on_api_call=on_api_call,
-            id_weight_scale=scale,
         )
-        last = img
         fails = evaluate_scene(img, slot, category)
         if not fails:
             return img
-        logger.warning("scene qa slot=%s try=%s/%s %s", slot, attempt + 1, MAX_SCENE_TRIES, fails)
-    logger.warning("scene qa slot=%s pulid exhausted — flux/dev fallback", slot)
-    fallback_prompt = (
-        "Photorealistic jewelry catalog photo. The woman described is sharp "
-        "and in the foreground. No watch, no jewelry, arms not crossed. "
-        + prompt
+        last_fails = fails
+        logger.warning(
+            "scene qa slot=%s flux try=%s/%s %s",
+            slot, attempt + 1, MAX_FLUX_TRIES, fails,
+        )
+    raise RuntimeError(
+        f"scene qa slot={slot} failed after retries: {last_fails}"
     )
-    img = generate_scene_flux_dev(
-        fallback_prompt,
-        negative_prompt=negative_prompt,
-        on_api_call=on_api_call,
-    )
-    fails = evaluate_scene(img, slot, category)
-    if fails:
-        logger.warning("scene qa slot=%s flux fallback still: %s", slot, fails)
-    return img
 
 
 def _tone_for_slot(slot: str, tone_names: list[str]) -> str | None:

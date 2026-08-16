@@ -35,9 +35,11 @@ def evaluate_scene(image: Image.Image, slot: str, category: str) -> list[str]:
         if main["cy"] > 0.48:
             fails.append(f"face not at top/edge cy={main['cy']:.2f}")
     if category in HAND_FOCUS and slot in FULL:
-        if main["area"] > 0.10:
+        # Waist-up crossed-arm fashion shots put the face near the top
+        # (cy~0.23, area~0.04). Real head-to-toe is smaller and higher.
+        if main["area"] > 0.030:
             fails.append(f"face too large for full-body area={main['area']:.2f}")
-        if main["cy"] > 0.32:
+        if main["cy"] > 0.20:
             fails.append(
                 f"not full-length (likely arms-crossed bust) cy={main['cy']:.2f}"
             )
@@ -47,7 +49,8 @@ def evaluate_scene(image: Image.Image, slot: str, category: str) -> list[str]:
             fails.append(
                 f"date: foreground is not the woman cx={main['cx']:.2f} cy={main['cy']:.2f}"
             )
-        if category in HAND_FOCUS and main["area"] < 0.03:
+        # Ring/bracelet wear shots keep the face small on purpose.
+        if category not in HAND_FOCUS and main["area"] < 0.03:
             fails.append("date: woman face too small (she is in the background)")
 
     if slot in TURNED_SLOTS and main["frontal"]:
