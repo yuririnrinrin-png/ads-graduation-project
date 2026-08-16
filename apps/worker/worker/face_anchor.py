@@ -97,6 +97,54 @@ def detect_face_norm(image: Image.Image) -> tuple[float, float, float, float] | 
     return (nx, ny, nw, nh)
 
 
+def detect_faces_detail(image: Image.Image) -> list[dict]:
+    """All YuNet faces with simple yaw cues (normalized 0-1).
+
+    eye_span: both-eyes width / face width. Frontal ~0.4+, profile much smaller.
+    nose_offset: |nose_x - face_center_x| / face_width. Profile is larger.
+    """
+    if cv2 is None:
+        return []
+    rgb = np.array(image.convert("RGB"))
+    bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+    h, w = bgr.shape[:2]
+    detector = _get_detector(w, h)
+    if detector is None:
+        return []
+    _retval, faces = detector.detect(bgr)
+    if faces is None or len(faces) == 0:
+        return []
+    out: list[dict] = []
+    for f in faces:
+        vals = [float(v) for v in f]
+        x, y, fw, fh = vals[0], vals[1], vals[2], vals[3]
+        score = vals[14] if len(vals) > 14 else 0.0
+        if fw <= 1 or fh <= 1:
+            continue
+        nose_x = vals[8] if len(vals) > 8 else x + fw / 2
+        eye_span = 0.5
+        if len(vals) >= 8:
+            eye_span = abs(vals[6] - vals[4]) / fw
+        nose_offset = abs(nose_x - (x + fw / 2)) / fw
+        out.append(
+            {
+                "x": x / w,
+                "y": y / h,
+                "w": fw / w,
+                "h": fh / h,
+                "cx": (x + fw / 2) / w,
+                "cy": (y + fh / 2) / h,
+                "area": (fw / w) * (fh / h),
+                "score": score,
+                "eye_span": eye_span,
+                "nose_offset": nose_offset,
+                "frontal": eye_span > 0.34 and nose_offset < 0.14,
+            }
+        )
+    out.sort(key=lambda p: p["area"], reverse=True)
+    return out
+
+
 def _necklace_target(face: tuple[float, float, float, float]) -> tuple[float, float]:
     x, y, w, h = face
     cx = x + w / 2

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "apps/worker/.venv/Scripts/python.exe .cursor/hooks/check_scene_spec.py",
+        "matcher": "scene_gen\\.py"
+      }
+    ],
+    "stop": [
+      {
+        "command": "apps/worker/.venv/Scripts/python.exe .cursor/hooks/check_scene_spec.py",
+        "loop_limit": 3
+      }
+    ]
+  }
+}

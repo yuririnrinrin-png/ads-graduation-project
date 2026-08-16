@@ -1,0 +1,18 @@
+---
+description: Person-scene prompt rules for the 7 jewelry wear shots
+globs: apps/worker/worker/scene_gen.py
+alwaysApply: false
+---
+
+# 人物7枚の約束
+
+`apps/worker/worker/scene_gen.py` を直すときは次を守る。機械チェックは `.cursor/hooks/check_scene_spec.py`。
+
+- 胴体は正面±15°。顔の斜め・横向きを7枚のうち数枚必ず入れる。後ろ姿禁止。
+- 7枠の表情はすべて別。目線は伏し目・外し目・柔らかい正面を混ぜる。
+- デートは対面の男性（ぼかした後ろ姿または手元）。
+- 髪型はアップと耳かけダウンの両方（カフェと引きがダウン）。
+- 服は首元開きとタートルを両方。
+- リング／ブレス着用は手元主役。全身でも手首・指が見える。
+- モデルに時計・他のジュエリーを描かせない。
+- 生成後の画像QA（`scene_qa.py`）に落ちたら再生成。プロンプト検査だけでは不十分。

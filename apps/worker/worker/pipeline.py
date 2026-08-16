@@ -23,7 +23,7 @@ from redis import Redis
 
 from worker.face_anchor import transforms_from_face
 from worker.hair_mask import HAIR_OVERLAY_SLOTS, build_hair_overlay
-from worker.scene_gen import generate_all_scenes
+from worker.scene_gen import generate_all_scenes, slot_pulid_params
 
 logging.basicConfig(
     level=logging.INFO,
@@ -870,7 +870,13 @@ def listen_forever() -> None:
     env_path()
     redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
     r = Redis.from_url(redis_url, decode_responses=True)
-    logger.info("worker listening on %s key=%s data=%s", redis_url, QUEUE_KEY, data_root())
+    logger.info(
+        "worker listening on %s key=%s data=%s scene_qa=on hand_id_weight=%s",
+        redis_url,
+        QUEUE_KEY,
+        data_root(),
+        slot_pulid_params("wear_office", "bust", "ring")["id_weight"],
+    )
 
     while True:
         item = r.brpop(QUEUE_KEY, timeout=5)
