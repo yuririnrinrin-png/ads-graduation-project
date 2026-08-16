@@ -68,8 +68,8 @@ BODY_ANCHORS = {
         {"x": 0.46, "y": 0.22, "scale": 0.045, "rotate": 4},
         {"x": 0.54, "y": 0.22, "scale": 0.045, "rotate": -4},
     ],
-    "ring": [{"x": 0.56, "y": 0.62, "scale": 0.06, "rotate": 0}],
-    "bracelet": [{"x": 0.48, "y": 0.58, "scale": 0.09, "rotate": 0}],
+    "ring": [{"x": 0.56, "y": 0.78, "scale": 0.06, "rotate": 0}],
+    "bracelet": [{"x": 0.48, "y": 0.74, "scale": 0.09, "rotate": 0}],
 }
 
 SLOT_DETAIL = ["detail_a", "detail_b", "detail_c"]

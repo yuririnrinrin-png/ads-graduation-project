@@ -177,8 +177,8 @@ export const DEFAULT_TRANSFORM: SlotTransform = {
  */
 export const TRANSFORM_OFFSET_LIMIT = 1000;
 
-/** Max |user rotate| in degrees (added to the category's fixed baseline tilt). */
-export const TRANSFORM_ROTATE_LIMIT = 45;
+/** Max |user rotate| in degrees. ±180 covers a full turn on the review slider. */
+export const TRANSFORM_ROTATE_LIMIT = 180;
 
 /**
  * `rotate` on Anchor (degrees, clockwise) is a small fixed baseline tilt
@@ -210,8 +210,8 @@ export const BODY_ANCHORS: Record<Category, Anchor[]> = {
     { x: 0.46, y: 0.22, scale: 0.045, rotate: 4 },
     { x: 0.54, y: 0.22, scale: 0.045, rotate: -4 },
   ],
-  ring: [{ x: 0.56, y: 0.62, scale: 0.06 }],
-  bracelet: [{ x: 0.48, y: 0.58, scale: 0.09 }],
+  ring: [{ x: 0.56, y: 0.78, scale: 0.06 }],
+  bracelet: [{ x: 0.48, y: 0.74, scale: 0.09 }],
 };
 
 export const DETAIL_SLOTS = ["detail_a", "detail_b", "detail_c"] as const;

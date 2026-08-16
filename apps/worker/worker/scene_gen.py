@@ -276,23 +276,23 @@ CATEGORY_FRAMING = {
         "hair tucked behind the ear so jewelry can sit there"
     ),
     "ring": (
-        "CRITICAL CROP: her BARE HANDS AND FINGERS fill the lower two-thirds "
-        "of the square frame and are the subject. The PALM OR BACK OF THE HAND "
-        "faces the camera (hand plane yaw under 15 degrees) so a flat ring "
-        "photo can sit on the finger. Fingers slightly spread, ring finger "
-        "unobstructed. Her face stays clearly visible in the upper third "
-        "(identity), smaller than the hands — not a face close-up, not a "
-        "finger-only macro with no face"
+        "CRITICAL CROP FIRST: this is a HAND photograph, not a portrait. "
+        "Both bare hands and all fingers fill the LOWER TWO-THIRDS of the "
+        "square. The camera is aimed at the table/hands. The back of the near "
+        "hand faces the lens, fingers slightly spread, ring finger empty and "
+        "sharp. Her face is small in the UPPER EDGE of the frame only "
+        "(identity), much smaller than the hands. "
+        "FORBIDDEN: waist-up, bust, head-and-shoulders, hands cut off, "
+        "hands below the frame, jewelry on the chest"
     ),
     "bracelet": (
-        "CRITICAL CROP: her BARE FOREARM AND WRIST fill the lower two-thirds "
-        "of the square frame and are the subject. The INNER WRIST faces the "
-        "camera almost flat (wrist yaw under 15 degrees), forearm lying across "
-        "the lower frame like a jewelry catalog, sleeve pushed up so the wrist "
-        "bone is fully visible. NOT a steep side-on cylinder. "
-        "Her face stays clearly visible in the upper third (identity), "
-        "smaller than the arm — not a face close-up, not a wrist-only "
-        "macro with no face"
+        "CRITICAL CROP FIRST: this is a WRIST photograph, not a portrait. "
+        "Bare forearm and wrist fill the LOWER TWO-THIRDS of the square. "
+        "The camera is aimed at the table/arm. Inner wrist faces the lens "
+        "almost flat, sleeve pushed up. Her face is small in the UPPER EDGE "
+        "of the frame only (identity), much smaller than the arm. "
+        "FORBIDDEN: waist-up, bust, head-and-shoulders, wrists cut off, "
+        "jewelry on the chest"
     ),
 }
 
@@ -316,20 +316,21 @@ HAND_PRESENT_RULE = {
 WEAR_HAND_POSE = {
     "ring": {
         "wear_office": (
-            "Both hands rest on the glass desk, palms down, backs of the hands "
-            "facing the camera, fingers relaxed and slightly spread."
+            "Hands occupy the center of the photo on the EMPTY glass desk. "
+            "No laptop, no screen, no object in front of the fingers. "
+            "Backs of the hands to the camera, fingers fully inside the frame."
         ),
         "wear_cafe": (
-            "Hands rest on the table beside the cup — not gripping it. "
-            "Backs of the hands face the camera, fingers fully visible."
+            "Hands occupy the center of the photo on the table beside the cup, "
+            "not gripping it. Backs of the hands to the camera, all fingers in frame."
         ),
         "wear_date": (
-            "One hand rests flat on the tablecloth near a wine glass, "
-            "back of the hand to the camera, fingers loosely open."
+            "One hand occupies the center of the photo on the tablecloth, "
+            "back of the hand to the camera, fingers fully inside the frame."
         ),
         "wear_holiday": (
-            "Hands rest on the pier railing, backs of the hands to the camera, "
-            "fingers slightly spread in sunlight."
+            "Hands occupy the center of the photo on the pier railing, "
+            "backs of the hands to the camera, fingers fully inside the frame."
         ),
     },
     "bracelet": {
@@ -352,33 +353,108 @@ WEAR_HAND_POSE = {
     },
 }
 
+# Office/cafe props must not sit BETWEEN the lens and the jewelry zone.
+WEAR_SETTING_HAND = {
+    "wear_office": (
+        "bright modern office, city skyline window behind her. The glass desk "
+        "in the foreground is mostly empty. Any laptop sits far to the SIDE, "
+        "never in front of her hands, never covering her fingers"
+    ),
+    "wear_cafe": (
+        "rustic wooden cafe table. Cup and plate sit to the SIDE of her hands, "
+        "not in front of them, sunlit afternoon"
+    ),
+    "wear_date": (
+        "fine-dining table, candle and glasses to the SIDE of her hands, "
+        "warm evening bokeh. She does NOT look over her shoulder"
+    ),
+    "wear_holiday": (
+        "wooden pier railing in golden-hour light, ocean blurred behind. "
+        "Nothing sits in front of her hands"
+    ),
+}
+
+TONE_PLACE_HAND = {
+    "オフィス": "bright office interior, city window behind her",
+    "休日": "relaxed weekend interior",
+    "エレガント": "refined softly lit interior",
+    "リラックス": "casual airy interior",
+}
+
 WEAR_FASHION_HAND = {
     "ring": (
-        "wearing a refined outfit whose sleeves stay clear of the hands; "
-        "bare fingers, no gloves, no stacked rings"
+        "wearing an OPEN jacket or short sleeves, never a high funnel collar. "
+        "Bare fingers, no gloves, no stacked rings, sleeves clear of the hands"
     ),
     "bracelet": (
-        "wearing a refined outfit with sleeves rolled or short so both wrists "
-        "can show; no watch, no cuff covering the wrist bone"
+        "wearing an OPEN jacket or short sleeves, never a high funnel collar. "
+        "Sleeves rolled so both wrists show; no watch, no cuff over the wrist"
     ),
 }
 
 # Full-body / wide: keep the standing crop, but the placement zone must exist.
 CATEGORY_FULL_EXTRA = {
     "ring": (
-        "One hand is slightly forward, back of the hand facing the camera, "
-        "fingers visible (not in pockets, not a fist, not behind her back, "
-        "arms not crossed)."
+        "CRITICAL FULL-LENGTH CROP FIRST: standing jewelry catalog photo "
+        "from the FRONT, never from behind. "
+        "The square MUST contain the top of her head AND every fingertip, "
+        "with empty space below the fingers. Hands live in the lower half. "
+        "If any finger is cut by the frame, the crop is wrong. "
+        "NOT a portrait, NOT waist-up, NOT hands on the face, NOT a bust. "
+        "One hand slightly forward so the back of the hand and fingers face "
+        "the camera enough to place a ring."
     ),
     "bracelet": (
-        "One forearm is slightly forward, inner wrist facing the camera, "
-        "sleeve not covering the wrist (not hands in pockets, arms not "
-        "crossed, not hugging herself)."
+        "CRITICAL FULL-LENGTH CROP FIRST: standing jewelry catalog photo. "
+        "The square MUST contain the top of her head AND both wrists, "
+        "with empty space below the hands. Wrists live in the lower half. "
+        "If a wrist is cut by the frame, the crop is wrong. "
+        "NOT a portrait, NOT waist-up, NOT arms crossed, NOT a bust. "
+        "One forearm slightly forward, inner wrist toward the camera."
     ),
+}
+
+# Standing slots: where the hands sit when the crop is full-length.
+FULL_HAND_POSE = {
+    "ring": {
+        "body_1": (
+            "She stands facing the camera with her torso. Not photographed "
+            "from behind. The near arm is in FRONT of her hip, shoulder to "
+            "fingertips fully visible, not hidden by the jacket."
+        ),
+        "body_2": (
+            "Arms down by her sides, not on her cheeks. Both hands and all "
+            "fingertips visible in front of the thighs."
+        ),
+        "wide_inset": (
+            "Standing relaxed, arms uncrossed, both hands and all fingertips "
+            "visible in the lower half of the square."
+        ),
+    },
+    "bracelet": {
+        "body_1": (
+            "She stands facing the camera with her torso. Not photographed "
+            "from behind. The near forearm is in FRONT of her hip, wrist "
+            "fully visible, not hidden by the jacket."
+        ),
+        "body_2": (
+            "Arms down by her sides, not on her cheeks. Both wrists visible "
+            "in front of the thighs."
+        ),
+        "wide_inset": (
+            "Standing relaxed, arms uncrossed, both wrists visible in the "
+            "lower half of the square."
+        ),
+    },
 }
 
 HAND_NEGATIVE = (
     "tight face-only crop, headshot, no hands, hands out of frame, "
+    "hands cut off, wrists cut off, wrists cropped, cropped at the waist, "
+    "cropped at the hips, waist-up portrait, bust crop, "
+    "laptop covering hands, laptop in front of the hands, computer screen "
+    "blocking fingers, object in front of the hands, "
+    "back to camera, seen from behind, over-the-shoulder, rear view, "
     "hands in pockets, clenched fists, gloves, extra fingers, "
     "deformed hands, missing fingers, jewelry on the hands, "
     "arms crossed, crossed arms, hugging herself, hand on opposite "
@@ -387,7 +463,10 @@ HAND_NEGATIVE = (
 )
 
 HAND_NEGATIVE_BY_CATEGORY = {
-    "ring": "fingers hidden, fist, hands behind back, edge-on hand",
+    "ring": (
+        "fingers hidden, fist, hands behind back, edge-on hand, "
+        "hands on the face, hands on cheeks, covering the face"
+    ),
     "bracelet": (
         "long sleeves covering wrists, watch, cuffs over the wrist, "
         "arms crossed, wrist in profile, cylindrical side view of the arm"
@@ -460,12 +539,16 @@ def hair_state(slot: str) -> str:
     return HAIR_STYLE.get(slot, ("up", ""))[0]
 
 
-def slot_pulid_params(slot: str | None, mode: str) -> dict:
+def slot_pulid_params(slot: str | None, mode: str, category: str | None = None) -> dict:
     """Lower id_weight + higher true_cfg so the prompt can turn the head.
 
     Do NOT send start_step>0 to fal-ai/flux-pulid — that path returns
     400 "Failed to get ID embeddings (no face detected): facexlib align face fail".
     """
+    if category in HAND_FOCUS_CATEGORIES:
+        # ID photo is a face close-up; keep identity weak so the crop can
+        # be hands/wrists instead of another bust portrait.
+        return {"id_weight": 0.28, "true_cfg": 3.4, "guidance_scale": 6.2}
     turned = slot in TURNED_SLOTS
     if turned:
         return {"id_weight": 0.32, "true_cfg": 3.0, "guidance_scale": 5.8}
@@ -476,8 +559,17 @@ def slot_pulid_params(slot: str | None, mode: str) -> dict:
     }
 
 
-def slot_id_weight(slot: str, mode: str) -> float:
-    return float(slot_pulid_params(slot, mode)["id_weight"])
+def slot_id_weight(slot: str, mode: str, category: str | None = None) -> float:
+    return float(slot_pulid_params(slot, mode, category)["id_weight"])
+
+
+HAND_NEGATIVE_BASE = (
+    "jewelry, necklace, earrings, rings, bracelet, watch, accessories, "
+    "text, watermark, logo, deformed hands, extra fingers, low quality, blurry, "
+    "tight face-only crop, headshot, passport photo, face filling the frame, "
+    "head-and-shoulders, bust portrait, waist-up, jewelry on the chest, "
+    "brooch placement, necklace crop"
+)
 
 
 def slot_negative_prompt(slot: str, mode: str, category: str | None = None) -> str:
@@ -489,9 +581,15 @@ def slot_negative_prompt(slot: str, mode: str, category: str | None = None) -> s
             SLOT_NEGATIVE_EXTRA.get(slot, ""),
         ]
         if mode == "full":
-            extras.append("tight headshot, cut off above the waist")
+            extras.append(
+                "tight headshot, waist-up, three-quarter crop that cuts the hands, "
+                "cut off above the waist, cropped at the hips, "
+                "hands cut off at the frame edge, fingertips cropped, "
+                "wrists out of frame, hands on the face, back to camera, "
+                "rear view, over-the-shoulder, high collar hiding the arms"
+            )
         extra = ", ".join(e for e in extras if e)
-        return f"{NEGATIVE}, {extra}"
+        return f"{HAND_NEGATIVE_BASE}, {extra}"
     base = NEGATIVE_FULL_BODY if mode == "full" else NEGATIVE_BUST
     extras = [HAIR_NEGATIVE_BY_STATE.get(hair_state(slot), "")]
     extras.append(SLOT_NEGATIVE_EXTRA.get(slot, ""))
@@ -580,17 +678,27 @@ def build_scene_prompt(
 
 
 def _pose_line(slot: str, category: str) -> str:
+    if category in HAND_FOCUS_CATEGORIES and slot == "body_1":
+        return (
+            "HEAD: three-quarter, we see her ear and jaw — not a passport photo. "
+            "TORSO faces the camera; this is NOT a back view. "
+            "上品で静か: calm closed lips. "
+            "GAZE: looking down and away, not at the lens"
+        )
     pose = POSE_VARIATION.get(slot, "torso square, distinct head angle")
     if category in HAND_FOCUS_CATEGORIES:
-        # Cup-in-hands hides the wrist/fingers we need to composite onto.
         pose = pose.replace("Holding a cup. ", "").replace("Holding a cup.", "")
+        if slot == "wide_inset":
+            pose = (
+                pose + " TORSO faces the camera. Never photographed from behind."
+            )
     return pose
 
 
 def _hand_fashion(slot: str, category: str) -> str:
-    scene_fashion = WEAR_FASHION.get(slot, "wearing a stylish coordinated outfit")
-    hand_bit = WEAR_FASHION_HAND.get(category, "")
-    return f"{scene_fashion}. {hand_bit}" if hand_bit else scene_fashion
+    # Do NOT reuse necklace WEAR_FASHION (open neckline / collarbones) —
+    # that pulls PuLID back into a bust portrait and hides the hands.
+    return WEAR_FASHION_HAND.get(category, "sleeves clear of the hands")
 
 
 def _build_hand_scene_prompt(
@@ -609,47 +717,51 @@ def _build_hand_scene_prompt(
         slot, "bare hands clearly visible in the lower frame"
     )
     fashion = _hand_fashion(slot, category)
-    # HEAD / hair / expression first (same as necklace/earring), then the
-    # wrist/hand must still face the lens for a flat cutout to sit.
-    lead = f"{pose} {hair_line} {present}"
 
     if mode == "bust":
-        setting = WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
+        # Crop/hands MUST lead. HEAD-first made PuLID copy the ID bust crop
+        # and hide the fingers (ring landed on the chest).
+        lead = f"{framing} {present} {hand_pose} {pose} {hair_line}"
+        setting = WEAR_SETTING_HAND.get(
+            slot, WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
+        )
         companion = ""
         if slot == "wear_date":
-            companion = (
-                "A second person may be softly blurred in the background. "
-                "She sits with her torso toward the camera; her head may turn. "
-                "She does not twist her whole body away. "
-            )
+            companion = "A second person may be softly blurred far in the background. "
         return (
-            f"{lead} {companion} {framing} {hand_pose} "
+            f"{lead} {companion}"
             f"Photorealistic commercial jewelry catalog photo of {look}. "
             f"{fashion}. Setting: {setting}. "
             "Same woman as the identity reference but do NOT copy that photo's "
-            "frontal pose or eye contact. Head angle, expression, and gaze must "
-            "match the HEAD / GAZE lines above. The FACE may turn; the "
-            "wrist/hand plane stays square to the lens. "
-            "Absolutely no jewelry on the model — bare skin on fingers and wrists. "
+            "head-and-shoulders crop. Hands stay the largest subject. "
+            "Head angle, expression, and gaze still follow the HEAD / GAZE "
+            "lines. The FACE may turn; the hand/wrist plane stays square to "
+            "the lens. Absolutely no jewelry — bare fingers and wrists. "
             "No text, no watermark."
         )
 
-    tone_bit = TONE_SETTING.get(tone_label or "", "wearing a stylish coordinated outfit")
+    place = TONE_PLACE_HAND.get(tone_label or "", "a softly lit interior")
     if slot == "wide_inset":
-        setting = "standing in an airy studio space with plain soft-toned background"
+        setting = "standing in an airy studio, photographed from the FRONT"
     else:
-        setting = f"standing in a softly lit lifestyle interior, {tone_bit}"
+        setting = f"standing in {place}, photographed from the FRONT, never from behind"
     extra = CATEGORY_FULL_EXTRA.get(category, "")
+    standing_hands = FULL_HAND_POSE.get(category, {}).get(slot, "")
+    # Do NOT reuse wear-4 table/hand close-up framing here — that fights a
+    # standing crop and PuLID falls back to a portrait with no fingers.
+    lead = f"{extra} {present} {standing_hands} {pose} {hair_line}"
     return (
         f"{lead} "
-        f"Three-quarter length fashion photograph of {look}. "
-        f"Standing, camera framing from the top of her head down "
-        f"to at least mid-thigh so her full coordinated outfit and styling are "
-        f"clearly visible. {extra} {fashion}. {setting}. "
+        f"Full-length standing photograph of {look}, camera pulled well back. "
+        f"Head near the top of the square; hands and fingertips fully inside "
+        f"the lower half with margin below the fingers. "
+        f"NOT a waist-up shot, NOT a bust, NOT hands covering the face, "
+        f"NOT photographed from behind. "
+        f"{fashion}. {setting}. "
         "Same woman as the identity reference but do NOT copy that photo's "
-        "frontal pose or eye contact. Head angle, expression, and gaze must "
-        "match the HEAD / GAZE lines above. The FACE may turn; the "
-        "wrist/hand plane stays square to the lens. "
+        "tight head-and-shoulders crop. Fingertips must remain in frame. "
+        "Head angle, expression, and gaze must match the HEAD / GAZE lines. "
+        "The FACE may turn; the wrist/hand plane stays square to the lens. "
         "Bare of jewelry (no necklace, earrings, rings, or bracelets). "
         "Square 1:1 crop, no text, no watermark."
     )
@@ -768,12 +880,13 @@ def generate_scene_fal(
     *,
     mode: str = "bust",
     slot: str | None = None,
+    category: str | None = None,
     negative_prompt: str | None = None,
     on_api_call: Callable[[], None] | None = None,
 ) -> Image.Image:
     is_full = mode == "full"
     negative = negative_prompt or (NEGATIVE_FULL_BODY if is_full else NEGATIVE)
-    params = slot_pulid_params(slot, mode)
+    params = slot_pulid_params(slot, mode, category)
     seed = random.randint(1, 2_147_483_647)
     logger.info(
         "scene fal seed=%s slot=%s id_weight=%s true_cfg=%s guidance=%s",
@@ -915,12 +1028,13 @@ def generate_all_scenes(
         prompt = build_scene_prompt(persona_name, slot, category, tone_label)
         mode = SCENE_META[slot]["mode"]
         negative = slot_negative_prompt(slot, mode, category)
-        logger.info("scene fal slot=%s mode=%s id_weight=%s prompt_len=%s", slot, mode, slot_id_weight(slot, mode), len(prompt))
+        logger.info("scene fal slot=%s mode=%s id_weight=%s prompt_len=%s", slot, mode, slot_id_weight(slot, mode, category), len(prompt))
         scenes[slot] = generate_scene_fal(
             prompt,
             ref_url,
             mode=mode,
             slot=slot,
+            category=category,
             negative_prompt=negative,
             on_api_call=on_api_call,
         )
