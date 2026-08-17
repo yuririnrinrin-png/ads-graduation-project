@@ -16,8 +16,8 @@ import {
 } from "@ti-amo/shared";
 
 type Presets = {
-  personas: { id: string; name: string }[];
-  backgrounds: { id: string; name: string }[];
+  personas: { id: string; name: string; imageUrl: string | null }[];
+  backgrounds: { id: string; name: string; imageUrl: string | null }[];
   tones: { id: string; name: string }[];
 };
 
@@ -313,6 +313,10 @@ export default function NewJobPage() {
                     onClick={() => setPersonaId(p.id)}
                   >
                     <div className={`persona-shot p${idx % 3}`}>
+                      {p.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.imageUrl} alt="" className="preset-thumb" />
+                      ) : null}
                       <span className="persona-name">{p.name}</span>
                     </div>
                   </button>
@@ -333,6 +337,15 @@ export default function NewJobPage() {
                     aria-pressed={backgroundId === b.id}
                     aria-label={b.name}
                     title={b.name}
+                    style={
+                      b.imageUrl
+                        ? {
+                            backgroundImage: `url(${b.imageUrl})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }
+                        : undefined
+                    }
                     onClick={() => setBackgroundId(b.id)}
                   />
                 ))}

@@ -33,9 +33,14 @@ export default async function HomePage() {
             3枚を上げる → 待つ → 直す → ZIP
           </p>
         </div>
-        <Link className="btn btn-gold" href="/jobs/new">
-          新規ジョブ
-        </Link>
+        <div className="row" style={{ gap: "0.75rem", alignItems: "center" }}>
+          <Link className="link" href="/presets">
+            プリセット
+          </Link>
+          <Link className="btn btn-gold" href="/jobs/new">
+            新規ジョブ
+          </Link>
+        </div>
       </div>
 
       <div className="frame">

@@ -26,6 +26,12 @@ export default async function RootLayout({
                   Ti amo Jewelry Studio
                 </a>
                 <div className="topbar-right">
+                  <a className="link" href="/">
+                    ジョブ
+                  </a>
+                  <a className="link" href="/presets">
+                    プリセット
+                  </a>
                   <span>{session.user?.name}</span>
                   <a className="link" href="/api/auth/signout">
                     出る

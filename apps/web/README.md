@@ -38,6 +38,7 @@ python -m worker.pipeline
 ## Web 側のメモ
 
 - ジョブ受付・進捗ポーリング・プレビュー配信・ZIP・大きさ/位置の再合成はここ
+- プリセット（人物・背景・トーン）の追加・改名・削除は `/presets`
 - 重い切り抜き・シーン・初回合成は `apps/worker`
 - レビュー画面の大きさ・位置調整はスライダーではなく**画像上のドラッグ＆リサイズ**（`SlotCardClient`）。
   人物シーン（`/api/jobs/[id]/scene/[slot]`）とジュエリー切り抜き（`/api/jobs/[id]/cutout/main`）を

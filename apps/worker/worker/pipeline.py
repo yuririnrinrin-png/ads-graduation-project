@@ -195,7 +195,8 @@ def load_job(conn, job_id: str) -> dict:
             SELECT j.id, j.category, j.metal, j."mainIndex", j."toneIds",
                    b.name AS background_name, p.name AS persona_name,
                    p."imageKey" AS persona_image_key,
-                   j."insetSlot" AS inset_slot
+                   j."insetSlot" AS inset_slot,
+                   b."imageKey" AS background_image_key
             FROM "Job" j
             JOIN "PresetBackground" b ON b.id = j."backgroundId"
             JOIN "PresetPersona" p ON p.id = j."personaId"
@@ -226,6 +227,7 @@ def load_job(conn, job_id: str) -> dict:
             "persona_name": row[6],
             "persona_image_key": row[7],
             "inset_slot": row[8] if len(row) > 8 and row[8] in SLOT_DETAIL else "detail_a",
+            "background_image_key": row[9] if len(row) > 9 else None,
         }
 
 
@@ -263,6 +265,18 @@ def make_background(kind: str, size: int = SIZE) -> Image.Image:
             axis=-1,
         )
     return Image.fromarray(rgb.astype(np.uint8), "RGB")
+
+
+def load_detail_background(job: dict) -> Image.Image:
+    key = (job.get("background_image_key") or "").strip()
+    if key:
+        path = Path(key)
+        if path.is_file():
+            img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+            return ImageOps.fit(img, (SIZE, SIZE), Image.Resampling.LANCZOS)
+        logger.warning("background image missing %s — using generated texture", key)
+    bg_kind = BG_BY_NAME.get(job["background_name"], "marble_white")
+    return make_background(bg_kind)
 
 
 def cutout_light_bg(src: Image.Image, threshold: int = 235) -> Image.Image:
@@ -645,8 +659,7 @@ def run_details(
     preview_dir: Path,
     slots: list[str] | None = None,
 ) -> dict[str, Image.Image]:
-    bg_kind = BG_BY_NAME.get(job["background_name"], "marble_white")
-    background = make_background(bg_kind)
+    background = load_detail_background(job)
     target = slots or SLOT_DETAIL
     out_imgs: dict[str, Image.Image] = {}
     for slot in target:

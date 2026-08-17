@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import Redis from "ioredis";
 
-const DATA_ROOT = process.env.DATA_ROOT
+export const DATA_ROOT = process.env.DATA_ROOT
   ? path.resolve(process.env.DATA_ROOT)
   : path.join(process.cwd(), ".data");
 
