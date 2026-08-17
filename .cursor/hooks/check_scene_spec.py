@@ -171,7 +171,9 @@ def run_checks() -> list[str]:
     turned_ok = 0
     for slot in TURNED_SLOTS:
         pose = (POSE_VARIATION.get(slot, "") + HAND_HEAD_POSE.get(slot, "")).lower()
-        if any(k in pose for k in ("turned 45", "turned 50", "turned 55", "80-90", "profile")):
+        if "80-90" in pose or "strict side profile" in pose:
+            _fail(f"{slot}: full profile head turns the whole body past 15 degrees", failures)
+        if any(k in pose for k in ("turned 45", "turned 50", "turned 55", "turned 40")):
             turned_ok += 1
         p = build_scene_prompt("Sofia", slot, "necklace").lower()
         if "turned" not in p and "profile" not in p:
@@ -211,16 +213,18 @@ def run_checks() -> list[str]:
     if "RETRY: do not copy the identity headshot" not in src:
         _fail("QA retry must strengthen the prompt, not only change seed", failures)
     if "generate_scene_flux_dev" not in src or "pulid exhausted" not in src:
-        _fail("QA must not soft-accept; flux/dev fallback required after PuLID fails", failures)
-    if "failed after retries" not in src:
-        _fail("scene QA must raise instead of keeping a failing frame", failures)
+        _fail("QA must not skip flux/dev fallback after PuLID fails", failures)
+    if "keeping last frame" not in src or "failed after retries" not in src:
+        _fail("scene QA must keep last frame after retries so the job can finish", failures)
     if "skip_pulid" not in src:
         _fail("ring/bracelet full-body must skip PuLID (it copies crossed-arm busts)", failures)
     qa = (ROOT / "apps" / "worker" / "worker" / "scene_qa.py").read_text(encoding="utf-8")
     if "face too large for hand-hero" not in qa:
         _fail("scene_qa must reject portrait crops on ring/bracelet wear", failures)
     if "face too frontal" not in qa:
-        _fail("scene_qa must reject frontal faces on turned slots", failures)
+        _fail("scene_qa must reject passport-frontal faces on turned slots", failures)
+    if "torso too side-on" not in qa or "body in profile" not in qa:
+        _fail("scene_qa must reject side-on / profile bodies (15-degree torso)", failures)
     if "foreground is not the woman" not in qa:
         _fail("scene_qa must reject date shots where the man is the foreground", failures)
     if "arms-crossed bust" not in qa:

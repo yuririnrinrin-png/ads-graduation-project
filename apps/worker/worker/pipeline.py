@@ -23,6 +23,7 @@ from redis import Redis
 
 from worker.face_anchor import transforms_from_face
 from worker.hair_mask import HAIR_OVERLAY_SLOTS, build_hair_overlay
+from worker.image_io import open_image, save_image
 from worker.scene_gen import generate_all_scenes, slot_pulid_params
 
 logging.basicConfig(
@@ -272,7 +273,7 @@ def load_detail_background(job: dict) -> Image.Image:
     if key:
         path = Path(key)
         if path.is_file():
-            img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+            img = ImageOps.exif_transpose(open_image(path, "RGB"))
             return ImageOps.fit(img, (SIZE, SIZE), Image.Resampling.LANCZOS)
         logger.warning("background image missing %s — using generated texture", key)
     bg_kind = BG_BY_NAME.get(job["background_name"], "marble_white")
@@ -395,7 +396,7 @@ def prepare_hair_overlay(
     if overlay is None:
         _clear_hair_overlay_asset(conn, job_id, slot, out)
         return None
-    overlay.save(out, "PNG")
+    save_image(overlay, out, "PNG")
     upsert_asset(conn, job_id, slot, "hair_overlay", str(out))
     return overlay
 
@@ -404,7 +405,7 @@ def load_hair_overlay(job_id: str, slot: str) -> Image.Image | None:
     path = job_dir(job_id) / "scene" / f"hair_{slot}.png"
     if not path.is_file():
         return None
-    return Image.open(path).convert("RGBA")
+    return open_image(path, "RGBA")
 
 
 def compose_detail(cutout: Image.Image, background: Image.Image, metal: str) -> Image.Image:
@@ -534,16 +535,16 @@ def load_cutouts_from_disk(cutout_dir: Path) -> list[Image.Image]:
     out: list[Image.Image] = []
     for i in range(3):
         path = require_file(cutout_dir / f"cutout_{i}.png")
-        out.append(Image.open(path).convert("RGBA"))
+        out.append(open_image(path, "RGBA"))
     return out
 
 
 def load_scene_image(scene_dir: Path, slot: str) -> Image.Image:
-    return Image.open(require_file(scene_dir / f"{slot}.jpg")).convert("RGB")
+    return open_image(require_file(scene_dir / f"{slot}.jpg"), "RGB")
 
 
 def load_detail_image(preview_dir: Path, slot: str) -> Image.Image:
-    return Image.open(require_file(preview_dir / ZIP_NAME[slot])).convert("RGB")
+    return open_image(require_file(preview_dir / ZIP_NAME[slot]), "RGB")
 
 
 def load_preview_transform(conn, job_id: str, slot: str) -> list[dict] | None:
@@ -575,7 +576,7 @@ def save_scene_slots(conn, job_id: str, scene_dir: Path, scenes: dict[str, Image
         upsert_asset(conn, job_id, "persona_ref", "persona_ref", str(ref_path))
     for slot, scene in scenes.items():
         out = scene_dir / f"{slot}.jpg"
-        scene.save(out, "JPEG", quality=90)
+        save_image(scene, out, "JPEG", quality=90)
         upsert_asset(conn, job_id, slot, "scene", str(out))
         logger.info("job_id=%s stage=scene slot=%s", job_id, slot)
 
@@ -609,7 +610,7 @@ def composite_slot(
     )
     if slot != "wide_inset":
         out = preview_dir / ZIP_NAME[slot]
-        img.save(out, "JPEG", quality=90)
+        save_image(img, out, "JPEG", quality=90)
         upsert_asset(conn, job_id, slot, "preview", str(out), transform=ts)
     logger.info("job_id=%s stage=composite slot=%s transform=%s", job_id, slot, ts)
     return ts
@@ -630,7 +631,7 @@ def write_inset(
         raise RuntimeError("インセット用のディテール画像がありません")
     wide_final = add_inset(wide_rgb, detail)
     out = preview_dir / ZIP_NAME["wide_inset"]
-    wide_final.save(out, "JPEG", quality=90)
+    save_image(wide_final, out, "JPEG", quality=90)
     upsert_asset(conn, job_id, "wide_inset", "preview", str(out), transform=wide_ts)
     logger.info("job_id=%s stage=inset source=%s", job_id, inset_key)
 
@@ -638,13 +639,13 @@ def write_inset(
 def run_cutouts(conn, job_id: str, inputs: list[Path], cutout_dir: Path) -> list[Image.Image]:
     cutouts: list[Image.Image] = []
     for i, path in enumerate(inputs):
-        src = ImageOps.exif_transpose(Image.open(path))
-        src = ImageOps.contain(src.convert("RGB"), (SIZE, SIZE))
+        src = ImageOps.exif_transpose(open_image(path, "RGB"))
+        src = ImageOps.contain(src, (SIZE, SIZE))
         canvas = Image.new("RGB", (SIZE, SIZE), (255, 255, 255))
         canvas.paste(src, ((SIZE - src.width) // 2, (SIZE - src.height) // 2))
         cut = cutout_light_bg(canvas)
         out = cutout_dir / f"cutout_{i}.png"
-        cut.save(out, "PNG")
+        save_image(cut, out, "PNG")
         upsert_asset(conn, job_id, f"cutout_{i}", "cutout", str(out))
         cutouts.append(cut)
         logger.info("job_id=%s stage=cutout i=%s", job_id, i)
@@ -666,7 +667,7 @@ def run_details(
         i = SLOT_DETAIL.index(slot)
         detail = compose_detail(cutouts[i], background, job["metal"])
         out = preview_dir / ZIP_NAME[slot]
-        detail.save(out, "JPEG", quality=90)
+        save_image(detail, out, "JPEG", quality=90)
         upsert_asset(conn, job_id, slot, "preview", str(out))
         out_imgs[slot] = detail
         logger.info("job_id=%s stage=detail slot=%s", job_id, slot)
@@ -874,9 +875,18 @@ def run_job(
 def fail_job(conn, job_id: str, stage: str, message: str) -> None:
     logger.error("job_id=%s failed stage=%s: %s", job_id, stage, message)
     try:
+        conn.rollback()
+    except Exception:
+        pass
+    try:
         set_stage(conn, job_id, stage, "failed", error=message[:500])
     except Exception:
         logger.exception("failed to persist error for %s", job_id)
+        try:
+            with db_connect() as conn2:
+                set_stage(conn2, job_id, stage, "failed", error=message[:500])
+        except Exception:
+            logger.exception("failed to persist error on reconnect for %s", job_id)
 
 
 def listen_forever() -> None:

@@ -10,6 +10,7 @@ type Params = { params: Promise<{ id: string }> };
 
 const bodySchema = z.object({
   mode: z.enum(["start", "failed"]),
+  force: z.boolean().optional(),
 });
 
 export async function POST(req: Request, { params }: Params) {
@@ -30,15 +31,15 @@ export async function POST(req: Request, { params }: Params) {
   if (job.status === "expired") {
     return NextResponse.json({ error: "期限切れのジョブはリトライできません" }, { status: 400 });
   }
-  if (isJobBusy(job.status)) {
+  if (isJobBusy(job.status) && !parsed.data.force) {
     return NextResponse.json(busyResponse(), { status: 409 });
   }
-  if (parsed.data.mode === "failed" && job.status !== "failed") {
+  if (parsed.data.mode === "failed" && job.status !== "failed" && !parsed.data.force) {
     return NextResponse.json({ error: "失敗したジョブだけ段階リトライできます" }, { status: 400 });
   }
 
   const fromStage =
-    parsed.data.mode === "start" ? "ingest" : retryFromStage(job.status, job.stage);
+    parsed.data.mode === "start" ? "ingest" : retryFromStage("failed", job.stage);
   const stage = (PIPELINE_STAGES as readonly string[]).includes(fromStage)
     ? (fromStage as PipelineStage)
     : "ingest";

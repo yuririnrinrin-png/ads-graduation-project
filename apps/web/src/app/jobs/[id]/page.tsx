@@ -169,6 +169,7 @@ function ProgressView({
     metal: string;
     persona: { name: string };
     background: { name: string };
+    updatedAt: Date;
   };
   failed: boolean;
 }) {
@@ -238,7 +239,11 @@ function ProgressView({
           })}
         </ol>
 
-        {failed ? <RetryActions jobId={job.id} /> : null}
+        {failed ? (
+          <RetryActions jobId={job.id} />
+        ) : Date.now() - job.updatedAt.getTime() > 12 * 60 * 1000 ? (
+          <RetryActions jobId={job.id} stuck />
+        ) : null}
       </div>
     </div>
   );

@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 
 type Props = {
   jobId: string;
+  stuck?: boolean;
 };
 
-export function RetryActions({ jobId }: Props) {
+export function RetryActions({ jobId, stuck = false }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState<"start" | "failed" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function RetryActions({ jobId }: Props) {
     const res = await fetch(`/api/jobs/${jobId}/retry`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode }),
+      body: JSON.stringify({ mode, force: stuck }),
     });
     const data = await res.json().catch(() => ({}));
     setPending(null);
@@ -46,7 +47,11 @@ export function RetryActions({ jobId }: Props) {
           disabled={pending !== null}
           onClick={() => void retry("failed")}
         >
-          {pending === "failed" ? "受付中…" : "失敗した段階からリトライ"}
+          {pending === "failed"
+            ? "受付中…"
+            : stuck
+              ? "今の段階からやり直す"
+              : "失敗した段階からリトライ"}
         </button>
       </div>
       {error ? (
@@ -55,7 +60,9 @@ export function RetryActions({ jobId }: Props) {
         </p>
       ) : (
         <p className="faint" style={{ marginTop: "0.75rem", fontSize: "0.75rem" }}>
-          同じ写真・設定のままやり直します。ワーカーが起動している必要があります。
+          {stuck
+            ? "画面が止まったときは、ワーカーを起動し直してからここを押してください。"
+            : "同じ写真・設定のままやり直します。ワーカーが起動している必要があります。"}
         </p>
       )}
     </div>

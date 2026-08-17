@@ -20,6 +20,8 @@ from urllib.request import urlopen
 
 from PIL import Image, ImageDraw, ImageFont
 
+from worker.image_io import open_image, save_image
+
 logger = logging.getLogger("tiamo.worker.scene")
 
 SIZE = 2000
@@ -152,8 +154,10 @@ BODY_FASHION_NECK = {
 # Torso stays jewelry-friendly. Never say "facing camera" about the person as
 # a whole — Flux/PuLID treats that as a frontal FACE.
 BODY_RULE = (
-    "Shoulders and chest stay square to the lens (torso yaw under 15 degrees). "
-    "The FACE is independent and must NOT copy a frontal ID photo."
+    "BODY: both shoulders equally visible, chest and collarbones face the camera, "
+    "hips square to the lens, torso yaw under 15 degrees. "
+    "Not a side-on body, not a walking profile, not one shoulder to the camera. "
+    "The HEAD may turn independently; do not rotate the torso with the head."
 )
 
 # Slots that must break the ID photo's front-facing eye-contact pose.
@@ -166,14 +170,15 @@ POSE_VARIATION = {
         "GAZE: toward camera but SOFT, upper lids slightly lowered"
     ),
     "wear_cafe": (
-        "HEAD: strong three-quarter, turned 50-60 degrees, we see her ear, "
-        "jaw, and one cheek more than the other. Holding a cup. "
+        "HEAD only: turned 40 degrees, we see her ear and jaw; "
+        "both shoulders still face the camera. Holding a cup. "
         "自然な笑顔: quiet closed-mouth smile. "
         "GAZE: DOWNCAST looking at the cup, eyes averted, ZERO eye contact, "
         "not looking at the lens"
     ),
     "wear_date": (
-        "HEAD: three-quarter, turned 45 degrees, ear visible. "
+        "HEAD only: three-quarter, turned 45 degrees, ear visible; "
+        "chest still faces the camera. "
         "甘えたような笑顔: coy closed-mouth smile. "
         "GAZE: looking off-camera and slightly down, no eye contact"
     ),
@@ -183,11 +188,11 @@ POSE_VARIATION = {
         "GAZE: toward camera but squinting softly from the smile, not a stare"
     ),
     "body_1": (
-        "TORSO stays front-on (yaw under 15 degrees); ONLY the head turns. "
-        "HEAD: STRICT SIDE PROFILE, about 80-90 degrees. We see only ONE eye, "
-        "her ear, and the side of her nose. Not a back view. "
+        "BODY stays front-on (both shoulders visible, yaw under 15 degrees). "
+        "HEAD only: turned 50 degrees, ear and jaw shown, three-quarter FACE. "
+        "Not a side-on body, not a back view. "
         "上品な微笑: calm closed-mouth smile. "
-        "GAZE: DOWNCAST along the profile, never at camera"
+        "GAZE: DOWNCAST, looking along her cheek, never at camera"
     ),
     "body_2": (
         "HEAD: turned 25 degrees with a playful tilt. "
@@ -195,7 +200,8 @@ POSE_VARIATION = {
         "GAZE: toward camera but crinkled and soft"
     ),
     "wide_inset": (
-        "HEAD: three-quarter, turned 45-50 degrees, ear and jaw clearly shown. "
+        "HEAD only: three-quarter, turned 45 degrees, ear and jaw shown; "
+        "both shoulders still face the camera. "
         "穏やかな微笑: soft closed-mouth smile. "
         "GAZE: downcast, looking down and away, no eye contact"
     ),
@@ -260,7 +266,8 @@ HAIR_NEGATIVE_BY_STATE = {
     "hair covering the earlobes",
 }
 
-# Forbid profile / over-shoulder / the opposite hair of this slot.
+# Forbid over-shoulder / opposite hair. Do not ban "frontal face" on
+# turned-head slots — that rotates the whole body past 15 degrees.
 SLOT_NEGATIVE_EXTRA = {
     "wear_office": (
         "teeth showing, open-mouth laugh, coy pout, downcast looking away, "
@@ -268,19 +275,20 @@ SLOT_NEGATIVE_EXTRA = {
     ),
     "wear_cafe": (
         "looking at the camera, eye contact, looking at the viewer, "
-        "frontal face, both eyes equally visible, "
+        "side-on body, body in profile, one shoulder to camera, "
         "passport photo, toothy grin, bun, ponytail, updo"
     ),
     "wear_date": (
-        "looking at the camera, eye contact, frontal face, passport photo, "
-        "teeth showing, big laugh"
+        "looking at the camera, eye contact, side-on body, body in profile, "
+        "passport photo, teeth showing, big laugh"
     ),
     "wear_holiday": (
         "eyes closed, downcast looking away, closed-mouth only, coy pout, "
         "serious frown, piercing stare, V-neck, open neckline, bare collarbones"
     ),
     "body_1": (
-        "looking at the camera, eye contact, frontal face, both eyes visible, "
+        "looking at the camera, eye contact, "
+        "side-on body, body in profile, standing in profile, "
         "passport photo, teeth showing, big grin, tight headshot, "
         "back view, rear view, walking away"
     ),
@@ -289,8 +297,8 @@ SLOT_NEGATIVE_EXTRA = {
         "blank stare, piercing stare, tight headshot"
     ),
     "wide_inset": (
-        "looking at the camera, eye contact, frontal face, passport photo, "
-        "both eyes equally visible, big grin, teeth showing, bun, ponytail, "
+        "looking at the camera, eye contact, side-on body, body in profile, "
+        "passport photo, big grin, teeth showing, bun, ponytail, "
         "updo, tight headshot"
     ),
 }
@@ -418,31 +426,33 @@ FULL_HAND_POSE = {
 HAND_HEAD_POSE = {
     "wear_office": (
         "HEAD: three-quarter, turned 30 degrees. キリッとした笑顔. Soft gaze. "
-        "Torso yaw under 15 degrees."
+        "Both shoulders face the camera. Torso yaw under 15 degrees."
     ),
     "wear_cafe": (
-        "HEAD: turned 55 degrees, ear and jaw visible, not a passport face. "
-        "自然な笑顔. Looking down, no eye contact. Torso yaw under 15 degrees."
+        "HEAD only: turned 40 degrees, ear and jaw visible, not a passport face. "
+        "自然な笑顔. Looking down, no eye contact. "
+        "Both shoulders face the camera. Torso yaw under 15 degrees."
     ),
     "wear_date": (
-        "HEAD: turned 45 degrees, ear visible. 甘えたような笑顔. Looking off-camera down. "
-        "Torso yaw under 15 degrees."
+        "HEAD only: turned 45 degrees, ear visible. 甘えたような笑顔. Looking off-camera down. "
+        "Chest to the lens. Torso yaw under 15 degrees."
     ),
     "wear_holiday": (
         "HEAD: tilted, turned 25 degrees. 華やかな笑顔 showing teeth. Soft gaze. "
         "Torso yaw under 15 degrees."
     ),
     "body_1": (
-        "HEAD: turned 50 degrees, ear visible. 上品な微笑. Looking down. "
-        "FRONT of her clothes. Torso yaw under 15 degrees. Not a back view."
+        "HEAD only: turned 50 degrees, ear visible. 上品な微笑. Looking down. "
+        "FRONT of her clothes, both shoulders visible. Torso yaw under 15 degrees. "
+        "Not a back view, not a side-on body."
     ),
     "body_2": (
         "HEAD: tilt 25 degrees. 屈託ない笑顔 showing teeth. Soft gaze. "
         "Torso yaw under 15 degrees."
     ),
     "wide_inset": (
-        "HEAD: turned 50 degrees, ear visible. 穏やかな微笑. Looking down. "
-        "FRONT of her clothes. Torso yaw under 15 degrees."
+        "HEAD only: turned 45 degrees, ear visible. 穏やかな微笑. Looking down. "
+        "FRONT of her clothes, both shoulders visible. Torso yaw under 15 degrees."
     ),
 }
 
@@ -451,6 +461,7 @@ HAND_NEGATIVE = (
     "laptop, computer, monitor, keyboard, notebook computer, "
     "object covering hands, cup covering fingers, "
     "back to camera, rear view, walking away, over-the-shoulder, "
+    "side-on body, body in profile, standing in profile, "
     "hands in pockets, gloves, extra fingers, deformed hands, "
     "watch, wristwatch, smartwatch, necklace, earrings, rings, bracelet, jewelry, "
     "arms crossed, hands on face, hands behind back"
@@ -468,9 +479,9 @@ HAND_SLOT_NEGATIVE = {
     "wear_cafe": "holding a cup, gripping a mug",
     "wear_date": "hands under the table",
     "wear_holiday": "hands behind the railing",
-    "body_1": "back view, rear view, walking away, photographed from behind, arms crossed, arms folded",
-    "body_2": "hands on cheeks, cropped at the hips, arms crossed, arms folded",
-    "wide_inset": "back view, rear view, walking away, cropped at the hips, arms crossed, arms folded",
+    "body_1": "back view, rear view, walking away, photographed from behind, side-on body, body in profile, arms crossed, arms folded",
+    "body_2": "hands on cheeks, cropped at the hips, arms crossed, arms folded, side-on body",
+    "wide_inset": "back view, rear view, walking away, cropped at the hips, side-on body, body in profile, arms crossed, arms folded",
 }
 
 NEGATIVE = (
@@ -478,6 +489,7 @@ NEGATIVE = (
     "fitness tracker, accessories, "
     "text, watermark, logo, deformed hands, extra fingers, low quality, blurry, "
     "back to camera, body facing away, over-the-shoulder body twist, "
+    "side-on body, body in profile, standing in profile, one shoulder to camera, "
     "passport photo, identical polite smile, piercing stare into the lens, "
     "extreme close-up, tight face-only crop, "
     "face filling the entire frame, cropped above the collarbone, "
@@ -721,7 +733,7 @@ def _build_hand_scene_prompt(
     if mode == "bust":
         setting = WEAR_SETTING_HAND.get(slot, "lifestyle interior")
         return (
-            f"{ACCESSORY_BAN} {framing} {present} {hand_pose} {pose} {hair} "
+            f"{ACCESSORY_BAN} {framing} {present} {hand_pose} {pose} {hair} {BODY_RULE} "
             f"Photorealistic jewelry catalog photo of {look}. {fashion}. "
             f"Setting: {setting}. "
             "Do not copy the identity photo's head-and-shoulders crop. "
@@ -738,7 +750,7 @@ def _build_hand_scene_prompt(
     extra = CATEGORY_FULL_EXTRA.get(category, "")
     standing_hands = FULL_HAND_POSE.get(category, {}).get(slot, "")
     return (
-        f"{ACCESSORY_BAN} {extra} {present} {standing_hands} {pose} {hair} "
+        f"{ACCESSORY_BAN} {extra} {present} {standing_hands} {pose} {hair} {BODY_RULE} "
         f"Full-length photo of {look}. {fashion}. {setting}. "
         "Do not copy the identity photo's tight crop. "
         "Fingertips stay in frame and stay obvious. No text."
@@ -1014,13 +1026,13 @@ def _save_and_upload_persona_ref(
     crop: bool,
 ) -> str:
     src_path = scene_dir / "persona_ref_src.jpg"
-    raw.save(src_path, "JPEG", quality=92)
+    save_image(raw, src_path, "JPEG", quality=92)
     if crop:
         id_img, found = _crop_face_for_pulid(raw)
     else:
         id_img, found = _to_square_size(raw, FAL_GEN_SIZE), _pulid_id_has_face(raw)
     ref_path = scene_dir / "persona_ref.jpg"
-    id_img.save(ref_path, "JPEG", quality=92)
+    save_image(id_img, ref_path, "JPEG", quality=92)
     url = _upload_jpeg(id_img)
     logger.info("saved persona reference crop=%s found_face=%s %s", crop, found, ref_path)
     return url
@@ -1056,7 +1068,7 @@ def generate_all_scenes(
     src_path = scene_dir / "persona_ref_src.jpg"
     ref_url: str | None = None
     if cached:
-        raw = Image.open(cached).convert("RGB")
+        raw = open_image(cached, "RGB")
         # Already cropped once. Cropping again collapses to a nose close-up.
         if _pulid_id_has_face(raw):
             ref_url = _upload_jpeg(raw)
@@ -1099,7 +1111,7 @@ def generate_all_scenes(
                     raise
                 logger.warning("PuLID rejected ID photo — using wider reference: %s", exc)
                 if src_path.is_file():
-                    raw = Image.open(src_path).convert("RGB")
+                    raw = open_image(src_path, "RGB")
                     ref_url = _save_and_upload_persona_ref(raw, scene_dir, crop=False)
                 else:
                     fresh = resolve_reference_url(
@@ -1119,7 +1131,8 @@ def _standing_catalog_lead() -> str:
     return (
         "Full-length standing fashion catalog photograph, 35mm lens, "
         "camera several meters away. Head near the top edge, shoes visible "
-        "at the bottom edge. Both arms hang straight down with a gap of "
+        "at the bottom edge. Both shoulders face the camera. "
+        "Both arms hang straight down with a gap of "
         "clothing between each arm and the torso. Uncovered empty wrists. "
     )
 
@@ -1138,13 +1151,19 @@ def _generate_scene_until_qa(
 
     skip_pulid = mode == "full" and category in HAND_FOCUS_CATEGORIES
     last_fails: list[str] = []
+    last_img: Image.Image | None = None
+    torso_retry = (
+        "RETRY: both shoulders face the camera equally, chest to the lens, "
+        "not a side-on or profile body. The head may turn. "
+    )
     if not skip_pulid:
         for attempt in range(MAX_SCENE_TRIES):
             scale = 1.0 if attempt == 0 else max(0.45, 0.75**attempt)
             use_prompt = prompt
             if attempt > 0:
                 use_prompt = (
-                    "RETRY: do not copy the identity headshot. "
+                    torso_retry
+                    + "RETRY: do not copy the identity headshot. "
                     + prompt
                 )
             img = generate_scene_fal(
@@ -1160,6 +1179,7 @@ def _generate_scene_until_qa(
             fails = evaluate_scene(img, slot, category)
             if not fails:
                 return img
+            last_img = img
             last_fails = fails
             logger.warning(
                 "scene qa slot=%s try=%s/%s %s",
@@ -1170,9 +1190,11 @@ def _generate_scene_until_qa(
     for attempt in range(MAX_FLUX_TRIES):
         use_prompt = prompt
         if mode == "full":
-            use_prompt = _standing_catalog_lead() + prompt
+            use_prompt = torso_retry + _standing_catalog_lead() + prompt
         elif attempt > 0:
-            use_prompt = "RETRY: do not copy the identity headshot. " + prompt
+            use_prompt = torso_retry + "RETRY: do not copy the identity headshot. " + prompt
+        else:
+            use_prompt = torso_retry + prompt
         img = generate_scene_flux_dev(
             use_prompt,
             negative_prompt=negative_prompt,
@@ -1181,14 +1203,22 @@ def _generate_scene_until_qa(
         fails = evaluate_scene(img, slot, category)
         if not fails:
             return img
+        last_img = img
         last_fails = fails
         logger.warning(
             "scene qa slot=%s flux try=%s/%s %s",
             slot, attempt + 1, MAX_FLUX_TRIES, fails,
         )
-    raise RuntimeError(
-        f"scene qa slot={slot} failed after retries: {last_fails}"
+    if last_img is None:
+        raise RuntimeError(
+            f"scene qa slot={slot} failed after retries: {last_fails}"
+        )
+    logger.warning(
+        "scene qa slot=%s failed after retries, keeping last frame: %s",
+        slot,
+        last_fails,
     )
+    return last_img
 
 
 def _tone_for_slot(slot: str, tone_names: list[str]) -> str | None:
