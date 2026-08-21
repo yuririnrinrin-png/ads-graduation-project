@@ -15,10 +15,13 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def _load_scene_gen():
-    """Load scene_gen.py without importing worker/__init__.py (that pulls numpy)."""
+    """Load scene_gen.py without importing worker.pipeline (that pulls redis)."""
     import importlib.util
 
-    path = ROOT / "apps" / "worker" / "worker" / "scene_gen.py"
+    worker_root = ROOT / "apps" / "worker"
+    if str(worker_root) not in sys.path:
+        sys.path.insert(0, str(worker_root))
+    path = worker_root / "worker" / "scene_gen.py"
     spec = importlib.util.spec_from_file_location("tiamo_scene_gen", path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")
@@ -214,6 +217,8 @@ def run_checks() -> list[str]:
         _fail("QA retry must strengthen the prompt, not only change seed", failures)
     if "generate_scene_flux_dev" not in src or "pulid exhausted" not in src:
         _fail("QA must not skip flux/dev fallback after PuLID fails", failures)
+    if "FalBillingError" not in src or "_is_billing_error" not in src:
+        _fail("fal billing lock must abort immediately instead of retrying slots", failures)
     if "keeping last frame" not in src or "failed after retries" not in src:
         _fail("scene QA must keep last frame after retries so the job can finish", failures)
     if "skip_pulid" not in src:

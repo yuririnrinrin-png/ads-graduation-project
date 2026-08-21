@@ -682,6 +682,7 @@ def run_scenes(
     slots: list[str],
     *,
     reuse_ref: bool,
+    reuse_existing_scenes: bool = False,
 ) -> dict[str, Image.Image]:
     def on_api_call() -> None:
         bump_api_call_count(conn, job_id, 1)
@@ -696,6 +697,7 @@ def run_scenes(
         scene_dir=scene_dir,
         on_api_call=on_api_call,
         reuse_reference_path=ref,
+        reuse_existing_scenes=reuse_existing_scenes,
     )
     save_scene_slots(conn, job_id, scene_dir, scenes)
     return scenes
@@ -825,6 +827,7 @@ def run_job(
             scene_dir,
             SCENE_SLOTS,
             reuse_ref=(scene_dir / "persona_ref.jpg").is_file(),
+            reuse_existing_scenes=(start == "scene"),
         )
     else:
         scenes = {s: load_scene_image(scene_dir, s) for s in SCENE_SLOTS}

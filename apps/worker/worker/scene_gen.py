@@ -832,12 +832,45 @@ def _upload_jpeg(img: Image.Image) -> str:
         Path(path).unlink(missing_ok=True)
 
 
+class FalBillingError(RuntimeError):
+    """fal.ai refused the call because the account has no spendable credit."""
+
+
+def _is_billing_error(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return any(
+        token in msg
+        for token in (
+            "exhausted balance",
+            "top_up",
+            "top up",
+            "user is locked",
+            "payment required",
+            "insufficient credit",
+            "403 forbidden",
+        )
+    )
+
+
+def _billing_message() -> str:
+    return (
+        "fal.ai の残高不足でアカウントがロックされています。"
+        "fal.ai/dashboard/billing でチャージし、反映を確認してから"
+        "「失敗した段階からリトライ」してください。"
+        "チャージ前に何度もリトライすると、途中まで課金されたあとで止まります。"
+    )
+
+
 def _fal_subscribe(model: str, arguments: dict) -> dict:
     import fal_client
 
     logger.info("fal subscribe model=%s", model)
-    result = fal_client.subscribe(model, arguments=arguments)
-    return result
+    try:
+        return fal_client.subscribe(model, arguments=arguments)
+    except Exception as exc:
+        if _is_billing_error(exc):
+            raise FalBillingError(_billing_message()) from exc
+        raise
 
 
 def _image_url_from_result(result: dict) -> str:
@@ -928,6 +961,8 @@ def generate_scene_fal(
     }
     try:
         result = _fal_subscribe("fal-ai/flux-pulid", arguments)
+    except FalBillingError:
+        raise
     except Exception as exc:
         if not _is_no_face_error(exc):
             raise
@@ -935,6 +970,8 @@ def generate_scene_fal(
         arguments["seed"] = random.randint(1, 2_147_483_647)
         try:
             result = _fal_subscribe("fal-ai/flux-pulid", arguments)
+        except FalBillingError:
+            raise
         except Exception as retry_exc:
             if _is_no_face_error(retry_exc):
                 raise PulidNoFaceError(str(retry_exc)) from retry_exc
@@ -1048,6 +1085,7 @@ def generate_all_scenes(
     scene_dir: Path,
     on_api_call: Callable[[], None] | None = None,
     reuse_reference_path: Path | None = None,
+    reuse_existing_scenes: bool = False,
 ) -> dict[str, Image.Image]:
     """
     Build person-only scenes for the given slots.
@@ -1089,6 +1127,11 @@ def generate_all_scenes(
 
     rebuilt_id = False
     for slot in slots:
+        existing = scene_dir / f"{slot}.jpg"
+        if reuse_existing_scenes and existing.is_file():
+            scenes[slot] = open_image(existing, "RGB")
+            logger.info("reusing existing scene slot=%s (skip fal)", slot)
+            continue
         tone_label = _tone_for_slot(slot, tone_names)
         prompt = build_scene_prompt(persona_name, slot, category, tone_label)
         mode = SCENE_META[slot]["mode"]
@@ -1106,6 +1149,8 @@ def generate_all_scenes(
                     on_api_call=on_api_call,
                 )
                 break
+            except FalBillingError:
+                raise
             except PulidNoFaceError as exc:
                 if rebuilt_id:
                     raise
@@ -1120,11 +1165,13 @@ def generate_all_scenes(
                     raw = _to_square_size(_download_image(fresh), SIZE)
                     ref_url = _save_and_upload_persona_ref(raw, scene_dir, crop=False)
                 rebuilt_id = True
+        save_image(scenes[slot], existing, "JPEG", quality=90)
+        logger.info("saved scene slot=%s", slot)
     return scenes
 
 
-MAX_SCENE_TRIES = 3
-MAX_FLUX_TRIES = 4
+MAX_SCENE_TRIES = 2
+MAX_FLUX_TRIES = 1
 
 
 def _standing_catalog_lead() -> str:
@@ -1187,28 +1234,31 @@ def _generate_scene_until_qa(
             )
         logger.warning("scene qa slot=%s pulid exhausted — flux/dev fallback", slot)
 
-    for attempt in range(MAX_FLUX_TRIES):
-        use_prompt = prompt
-        if mode == "full":
-            use_prompt = torso_retry + _standing_catalog_lead() + prompt
-        elif attempt > 0:
-            use_prompt = torso_retry + "RETRY: do not copy the identity headshot. " + prompt
-        else:
-            use_prompt = torso_retry + prompt
-        img = generate_scene_flux_dev(
-            use_prompt,
-            negative_prompt=negative_prompt,
-            on_api_call=on_api_call,
-        )
-        fails = evaluate_scene(img, slot, category)
-        if not fails:
-            return img
-        last_img = img
-        last_fails = fails
-        logger.warning(
-            "scene qa slot=%s flux try=%s/%s %s",
-            slot, attempt + 1, MAX_FLUX_TRIES, fails,
-        )
+    # Flux is a last resort only when PuLID produced nothing. Extra flux
+    # retries after a usable frame burn credit and the job still keeps the last shot.
+    if last_img is None:
+        for attempt in range(MAX_FLUX_TRIES):
+            use_prompt = prompt
+            if mode == "full":
+                use_prompt = torso_retry + _standing_catalog_lead() + prompt
+            elif attempt > 0:
+                use_prompt = torso_retry + "RETRY: do not copy the identity headshot. " + prompt
+            else:
+                use_prompt = torso_retry + prompt
+            img = generate_scene_flux_dev(
+                use_prompt,
+                negative_prompt=negative_prompt,
+                on_api_call=on_api_call,
+            )
+            fails = evaluate_scene(img, slot, category)
+            if not fails:
+                return img
+            last_img = img
+            last_fails = fails
+            logger.warning(
+                "scene qa slot=%s flux try=%s/%s %s",
+                slot, attempt + 1, MAX_FLUX_TRIES, fails,
+            )
     if last_img is None:
         raise RuntimeError(
             f"scene qa slot={slot} failed after retries: {last_fails}"
