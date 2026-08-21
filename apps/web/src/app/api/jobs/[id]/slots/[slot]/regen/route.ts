@@ -26,6 +26,9 @@ export async function POST(_req: Request, { params }: Params) {
   if (!job) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  if (job.status === "expired") {
+    return NextResponse.json({ error: "生成結果は14日で削除されました" }, { status: 410 });
+  }
   if (job.status !== "ready") {
     return NextResponse.json(
       { error: "完了したジョブの枠だけ再生成できます" },

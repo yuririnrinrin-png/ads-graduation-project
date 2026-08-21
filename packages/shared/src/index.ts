@@ -95,13 +95,33 @@ export const SLOT_BADGES: Record<SlotKey, string> = {
   wide_inset: "10 wide_inset",
 };
 
-/** User-facing progress steps (DESIGN §3 / mock Screen 03). */
+/** User-facing progress steps (REQUIREMENTS §7 / DESIGN §3). */
 export const PROGRESS_STEPS = [
-  { key: "cutout", label: "切り抜き" },
-  { key: "detail", label: "ディテール（背景・色調整）" },
-  { key: "scene", label: "人物シーン生成" },
-  { key: "composite", label: "実物合成" },
-  { key: "inset", label: "仕上げ（インセット）" },
+  {
+    key: "cutout",
+    label: "切り抜き",
+    hint: "商品を背景から取り出しています",
+  },
+  {
+    key: "detail",
+    label: "ディテール",
+    hint: "背景と地金の色を合わせています",
+  },
+  {
+    key: "scene",
+    label: "人物シーン",
+    hint: "着用7枚を作っています。いちばん時間がかかります",
+  },
+  {
+    key: "composite",
+    label: "合成",
+    hint: "実物のジュエリーを人物に載せています",
+  },
+  {
+    key: "inset",
+    label: "仕上げ",
+    hint: "引き写真にディテールをはめ込んでいます",
+  },
 ] as const;
 
 export const PIPELINE_STAGES = [
@@ -149,6 +169,9 @@ export const V1_CONCURRENT_JOBS_HINT = 2;
 
 /** Progress polling interval (ms). */
 export const PROGRESS_POLL_MS = 4000;
+
+/** Generated files are deleted this many days after job creation (REQUIREMENTS §6). */
+export const JOB_RETENTION_DAYS = 14;
 
 /** Jewelry placement on person scenes (fractions of 2000×2000 + relative scale). */
 export type SlotTransform = {

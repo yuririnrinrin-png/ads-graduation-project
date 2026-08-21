@@ -8,31 +8,23 @@ import {
   getAnchors,
   isBodySlot,
   JOB_STATUS_LABELS,
-  PIPELINE_STAGE_LABELS,
-  PROGRESS_STEPS,
   SLOT_KEYS,
   type Category,
   type DetailSlot,
   type JobStatus,
-  type PipelineStage,
   type SlotKey,
   type SlotTransform,
 } from "@ti-amo/shared";
 import { DeleteJobButton } from "@/components/DeleteJobButton";
 import { JobStatusPoller } from "@/components/JobStatusPoller";
-import { RetryActions } from "@/components/RetryActions";
+import { ProgressPanel } from "@/components/ProgressPanel";
 import { SlotCardClient } from "@/components/SlotCardClient";
 import { prisma } from "@/lib/prisma";
+import { purgeExpiredJobs } from "@/lib/purge-expired";
 import { requirePageSession } from "@/lib/require-page-session";
+import { remainingDays, retentionLabel } from "@/lib/retention";
 
 type Props = { params: Promise<{ id: string }> };
-
-function progressIndex(stage: string | null | undefined): number {
-  if (!stage || stage === "ingest") return 0;
-  if (stage === "ready") return PROGRESS_STEPS.length;
-  const idx = PROGRESS_STEPS.findIndex((s) => s.key === stage);
-  return idx >= 0 ? idx : 0;
-}
 
 function asTransform(value: unknown): SlotTransform {
   if (!value || typeof value !== "object") return DEFAULT_TRANSFORM;
@@ -68,6 +60,8 @@ function ReviewView({
     metal: string;
     insetSlot?: string;
     updatedAt: Date;
+    createdAt: Date;
+    expiresAt: Date | null;
   };
   transforms: Partial<Record<SlotKey, SlotTransform[]>>;
 }) {
@@ -84,8 +78,16 @@ function ReviewView({
           <p className="brand" style={{ fontSize: "1.25rem", margin: 0 }}>
             10枚の確認
           </p>
-          <p className="faint" style={{ fontSize: "0.75rem", margin: "0.25rem 0 0" }}>
+          <p
+            className={remainingDays(job.createdAt, job.expiresAt) <= 3 ? "retention-warn" : "faint"}
+            style={{ fontSize: "0.75rem", margin: "0.25rem 0 0" }}
+          >
             ジョブ {job.id.slice(0, 8)} · 同一人物 {job.persona.name} · 2000×2000
+            {" · "}
+            {retentionLabel(job.createdAt, job.expiresAt)}
+            {remainingDays(job.createdAt, job.expiresAt) <= 3
+              ? " · 期限前に ZIP を保存してください"
+              : ""}
           </p>
         </div>
         <a className="btn btn-primary" href={`/api/jobs/${job.id}/zip`}>
@@ -157,93 +159,18 @@ function ReviewView({
   );
 }
 
-function ProgressView({
-  job,
-  failed,
-}: {
-  job: {
-    id: string;
-    stage: string | null;
-    error: string | null;
-    category: string;
-    metal: string;
-    persona: { name: string };
-    background: { name: string };
-    updatedAt: Date;
-  };
-  failed: boolean;
-}) {
-  const current = progressIndex(job.stage);
-  const failAt = failed ? current : -1;
-  const pct = failed
-    ? Math.max(12, (current / PROGRESS_STEPS.length) * 100)
-    : Math.min(95, ((current + 0.4) / PROGRESS_STEPS.length) * 100);
-  const stageLabel =
-    PIPELINE_STAGE_LABELS[job.stage as PipelineStage] ?? job.stage ?? "処理";
-
+function ExpiredView() {
   return (
     <div className="frame anim-rise">
-      <div className="progress-panel">
-        {failed ? (
-          <>
-            <p className="fail-badge">FAILED</p>
-            <h1
-              className="hero-title"
-              style={{ fontSize: "clamp(1.75rem, 4vw, 2.25rem)", marginTop: "1rem" }}
-            >
-              {stageLabel}で失敗しました
-            </h1>
-            <p className="muted" style={{ maxWidth: "28rem", margin: "0.5rem auto 0", fontSize: "0.875rem" }}>
-              {job.error ?? `段階「${stageLabel}」でエラー。`}
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="hero-title" style={{ fontSize: "clamp(1.75rem, 4vw, 2.25rem)" }}>
-              生成しています
-            </h1>
-            <p className="muted" style={{ margin: "0.5rem 0 0", fontSize: "0.875rem" }}>
-              {CATEGORY_LABELS[job.category as Category] ?? job.category} · {job.metal} ·{" "}
-              {job.persona.name} · {job.background.name}
-            </p>
-            <div className="progress-bar">
-              <span style={{ width: `${pct}%` }} />
-            </div>
-            <p className="faint" style={{ marginTop: "0.75rem", fontSize: "0.75rem" }}>
-              全体の目安 2〜4分 · 数秒ごとに状態を更新します
-            </p>
-          </>
-        )}
-
-        <ol className="stage-list">
-          {PROGRESS_STEPS.map((step, i) => {
-            let cls = "stage-item";
-            let mark: string | number = i + 1;
-            if (failed && i === failAt) {
-              cls += " failed";
-              mark = "!";
-            } else if (i < current || (!failed && job.stage === "ready")) {
-              cls += " done";
-              mark = "✓";
-            } else if (!failed && i === current) {
-              cls += " current";
-              mark = String(i + 1);
-            }
-            return (
-              <li key={step.key} className={cls}>
-                <span className="stage-dot">{mark}</span>
-                {step.label}
-                {failed && i === failAt ? " — 失敗" : ""}
-              </li>
-            );
-          })}
-        </ol>
-
-        {failed ? (
-          <RetryActions jobId={job.id} />
-        ) : Date.now() - job.updatedAt.getTime() > 12 * 60 * 1000 ? (
-          <RetryActions jobId={job.id} stuck />
-        ) : null}
+      <div className="frame-bar">
+        <p className="brand" style={{ fontSize: "1.25rem", margin: 0 }}>
+          期限切れ
+        </p>
+      </div>
+      <div className="frame-body">
+        <p className="muted" style={{ fontSize: "0.9rem", margin: 0 }}>
+          生成結果は14日で削除されました。ZIP は出せません。一覧の削除でこの行も消せます。
+        </p>
       </div>
     </div>
   );
@@ -252,6 +179,7 @@ function ProgressView({
 export default async function JobDetailPage({ params }: Props) {
   await requirePageSession();
   const { id } = await params;
+  await purgeExpiredJobs(id);
   const job = await prisma.job.findUnique({
     where: { id },
     include: { persona: true, background: true, assets: true },
@@ -268,15 +196,22 @@ export default async function JobDetailPage({ params }: Props) {
     }
   }
 
+  const title =
+    job.status === "ready"
+      ? "レビュー"
+      : job.status === "failed"
+        ? "進捗 · 失敗"
+        : job.status === "expired"
+          ? "期限切れ"
+          : "進捗";
+
   return (
     <section className="stack" style={{ gap: "1.25rem" }}>
       <JobStatusPoller jobId={job.id} initialStatus={job.status} />
       <div className="page-head" style={{ marginBottom: 0 }}>
         <div>
           <p className="section-kicker">Job · {statusLabel}</p>
-          <h1 className="section-title">
-            {job.status === "ready" ? "レビュー" : job.status === "failed" ? "進捗 · 失敗" : "進捗"}
-          </h1>
+          <h1 className="section-title">{title}</h1>
         </div>
         <div className="row" style={{ gap: "0.5rem" }}>
           <DeleteJobButton jobId={job.id} redirectTo="/" />
@@ -287,12 +222,11 @@ export default async function JobDetailPage({ params }: Props) {
       </div>
 
       {job.status === "ready" ? (
-        <ReviewView
-          job={job}
-          transforms={transforms}
-        />
+        <ReviewView job={job} transforms={transforms} />
+      ) : job.status === "expired" ? (
+        <ExpiredView />
       ) : (
-        <ProgressView job={job} failed={job.status === "failed"} />
+        <ProgressPanel job={job} failed={job.status === "failed"} />
       )}
     </section>
   );

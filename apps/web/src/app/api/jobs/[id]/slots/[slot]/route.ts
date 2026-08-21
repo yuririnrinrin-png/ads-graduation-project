@@ -52,7 +52,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
   }
 
   const job = await prisma.job.findUnique({ where: { id } });
-  if (!job || job.status !== "ready") {
+  if (!job || job.status === "expired") {
+    return NextResponse.json(
+      { error: job?.status === "expired" ? "生成結果は14日で削除されました" : "Job not ready" },
+      { status: job?.status === "expired" ? 410 : 400 }
+    );
+  }
+  if (job.status !== "ready") {
     return NextResponse.json({ error: "Job not ready" }, { status: 400 });
   }
 

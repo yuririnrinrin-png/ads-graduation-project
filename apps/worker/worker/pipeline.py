@@ -1,5 +1,5 @@
 """
-Ti amo Jewelry Studio — Phase 2–4 worker.
+Ti amo Jewelry Studio — Phase 2–5 worker.
 
 Queue: Redis list `tiamo:jobs` (jobId or JSON {jobId, fromStage, slots})
 Stages: ingest → cutout → detail → scene → composite → inset → ready
@@ -24,6 +24,7 @@ from redis import Redis
 from worker.face_anchor import transforms_from_face
 from worker.hair_mask import HAIR_OVERLAY_SLOTS, build_hair_overlay
 from worker.image_io import open_image, save_image
+from worker.retention import PURGE_INTERVAL_SEC, purge_expired
 from worker.scene_gen import generate_all_scenes, slot_pulid_params
 
 logging.basicConfig(
@@ -904,7 +905,18 @@ def listen_forever() -> None:
         slot_pulid_params("wear_office", "bust", "ring")["id_weight"],
     )
 
+    last_purge = 0.0
     while True:
+        now = time.time()
+        if now - last_purge >= PURGE_INTERVAL_SEC:
+            try:
+                with db_connect() as conn:
+                    n = purge_expired(conn, data_root() / "jobs")
+                if n:
+                    logger.info("expired-job purge removed %s job(s)", n)
+            except Exception:
+                logger.exception("expired-job purge failed")
+            last_purge = now
         item = r.brpop(QUEUE_KEY, timeout=5)
         if not item:
             continue
@@ -933,7 +945,12 @@ def listen_forever() -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3 and sys.argv[1] == "run":
+    if len(sys.argv) == 2 and sys.argv[1] == "purge":
+        env_path()
+        with db_connect() as conn:
+            n = purge_expired(conn, data_root() / "jobs")
+        logger.info("purged %s expired job(s)", n)
+    elif len(sys.argv) == 3 and sys.argv[1] == "run":
         env_path()
         with db_connect() as conn:
             run_job(conn, sys.argv[2])

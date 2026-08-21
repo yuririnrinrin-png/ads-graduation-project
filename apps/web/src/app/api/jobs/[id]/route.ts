@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { removeJobDir } from "@/lib/dummy-assets";
+import { purgeExpiredJobs } from "@/lib/purge-expired";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -10,6 +11,7 @@ export async function GET(_req: Request, { params }: Params) {
   if (error) return error;
 
   const { id } = await params;
+  await purgeExpiredJobs(id);
   const job = await prisma.job.findUnique({
     where: { id },
     include: { persona: true, background: true, assets: true },

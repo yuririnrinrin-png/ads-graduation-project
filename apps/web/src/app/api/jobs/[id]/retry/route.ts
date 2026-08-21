@@ -29,7 +29,7 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   if (job.status === "expired") {
-    return NextResponse.json({ error: "期限切れのジョブはリトライできません" }, { status: 400 });
+    return NextResponse.json({ error: "期限切れのジョブはリトライできません" }, { status: 410 });
   }
   if (isJobBusy(job.status) && !parsed.data.force) {
     return NextResponse.json(busyResponse(), { status: 409 });

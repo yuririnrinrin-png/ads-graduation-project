@@ -122,10 +122,12 @@ def detect_faces_detail(image: Image.Image) -> list[dict]:
         if fw <= 1 or fh <= 1:
             continue
         nose_x = vals[8] if len(vals) > 8 else x + fw / 2
+        face_cx_px = x + fw / 2
         eye_span = 0.5
         if len(vals) >= 8:
             eye_span = abs(vals[6] - vals[4]) / fw
-        nose_offset = abs(nose_x - (x + fw / 2)) / fw
+        nose_offset = abs(nose_x - face_cx_px) / fw
+        nose_dx = (nose_x - face_cx_px) / fw
         out.append(
             {
                 "x": x / w,
@@ -138,6 +140,7 @@ def detect_faces_detail(image: Image.Image) -> list[dict]:
                 "score": score,
                 "eye_span": eye_span,
                 "nose_offset": nose_offset,
+                "nose_dx": nose_dx,
                 "frontal": eye_span > 0.34 and nose_offset < 0.14,
             }
         )

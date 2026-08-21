@@ -41,8 +41,11 @@ SLOT_EXPRESSION = _sg.SLOT_EXPRESSION
 WEAR_SETTING = _sg.WEAR_SETTING
 WEAR_SETTING_HAND = _sg.WEAR_SETTING_HAND
 ACCESSORY_BAN = _sg.ACCESSORY_BAN
+PHOTO_RULE = _sg.PHOTO_RULE
+NEGATIVE = _sg.NEGATIVE
 HAND_PRESENT_RULE = _sg.HAND_PRESENT_RULE
 TURNED_SLOTS = _sg.TURNED_SLOTS
+BODY_RULE = _sg.BODY_RULE
 slot_pulid_params = _sg.slot_pulid_params
 MAX_SCENE_TRIES = _sg.MAX_SCENE_TRIES
 build_scene_prompt = _sg.build_scene_prompt
@@ -100,23 +103,71 @@ def run_checks() -> list[str]:
 
     date_n = build_scene_prompt("Sofia", "wear_date", "necklace")
     date_r = build_scene_prompt("Sofia", "wear_date", "ring")
-    for label, text in (("necklace date", date_n), ("ring date", date_r)):
+    date_e = build_scene_prompt("Sofia", "wear_date", "earring")
+    for label, text in (
+        ("necklace date", date_n),
+        ("ring date", date_r),
+        ("earring date", date_e),
+    ):
         low = text.lower()
         if "man" not in low:
             _fail(f"{label}: missing man across the table", failures)
         if "blur" not in low:
-            _fail(f"{label}: man must be blurred", failures)
-        if "back" not in low and "hands" not in low:
-            _fail(f"{label}: need blurred back or hands", failures)
+            _fail(f"{label}: man must be softly blurred (woman stays the hero)", failures)
+        if "enjoying" not in low and "together" not in low and "talking" not in low:
+            _fail(f"{label}: date must feel like a couple enjoying dinner", failures)
+        if "two-person" not in low and "two people" not in low:
+            _fail(f"{label}: must say TWO-PERSON so the man is actually in frame", failures)
+        if "face" not in low and "three-quarter" not in low:
+            _fail(f"{label}: man must be visible as a person (face/three-quarter), not only a back", failures)
+        if "only the back" not in low and "back of the man" not in low:
+            _fail(f"{label}: must forbid a back-only man", failures)
+        if "hero" not in low and "foreground" not in low:
+            _fail(f"{label}: woman must stay the hero / foreground", failures)
+        if "jewelry" not in low and "unobstructed" not in low:
+            _fail(f"{label}: jewelry zones must stay visible / unobstructed", failures)
     if "15" not in date_n:
         _fail("date necklace: torso must stay under 15 degrees", failures)
     if "15" not in date_r:
         _fail("date ring: torso must stay under 15 degrees", failures)
 
+    setting_date = WEAR_SETTING["wear_date"].lower()
+    if "enjoying" not in setting_date:
+        _fail("WEAR_SETTING wear_date must describe a couple enjoying the date", failures)
+    if "face" not in setting_date and "three-quarter" not in setting_date:
+        _fail("WEAR_SETTING wear_date: man needs a visible face, not only a back", failures)
+    hand_date = WEAR_SETTING_HAND["wear_date"].lower()
+    if "face" not in hand_date and "three-quarter" not in hand_date:
+        _fail("WEAR_SETTING_HAND wear_date: man needs a visible face, not only a back", failures)
+
+    if "15" not in BODY_RULE or "head may turn" not in BODY_RULE.lower():
+        _fail("BODY_RULE must keep torso under 15 degrees and allow the head to turn", failures)
+    if "not walking" not in BODY_RULE.lower() and "standing still" not in BODY_RULE.lower():
+        _fail("BODY_RULE must forbid walking / require standing or sitting still", failures)
+    if "street-fashion side view" not in BODY_RULE.lower() and "walking profile" not in BODY_RULE.lower():
+        _fail("BODY_RULE must forbid a walking / street-fashion side-on body", failures)
+
     for slot in SLOTS:
         p = build_scene_prompt("Sofia", slot, "necklace", "オフィス")
-        if "15" not in p and "under 15" not in p.lower():
+        low = p.lower()
+        if "15" not in p and "under 15" not in low:
             _fail(f"{slot} necklace missing torso 15-degree rule", failures)
+        if "head may turn" not in low and "head only" not in low:
+            _fail(f"{slot}: missing head-turns-independently instruction", failures)
+        if "do not rotate the torso" not in low and "torso with the head" not in low:
+            _fail(f"{slot}: must say the torso does not turn with the head", failures)
+
+    for slot in FULL:
+        p = build_scene_prompt("Sofia", slot, "necklace", "オフィス").lower()
+        n = slot_negative_prompt(slot, "full", "necklace").lower()
+        if "standing still" not in p and "not walking" not in p:
+            _fail(f"{slot}: full-body prompt must say standing still / not walking", failures)
+        if "walking" not in n and "striding" not in n:
+            _fail(f"{slot}: full-body negative must ban walking/striding", failures)
+        if slot == "wide_inset" and "over-the-shoulder" not in n and "looking over" not in n:
+            _fail("wide_inset negative must ban looking over the shoulder", failures)
+        if "front of her clothes" not in p and "both hips" not in p:
+            _fail(f"{slot}: full-body must show the FRONT of the clothes / both hips", failures)
 
     gazes = []
     for slot in SLOTS:
@@ -159,17 +210,41 @@ def run_checks() -> list[str]:
     if "like showing a watch" in HAND_PRESENT_RULE.get("bracelet", "").lower():
         _fail("bracelet pose must not say 'showing a watch' (model draws watches)", failures)
 
+    # Extra jewelry is never drawn. The uploaded product is composited later.
+    ban = ACCESSORY_BAN.lower()
+    if "no necklace" not in ban or "no earrings" not in ban or "no rings" not in ban:
+        _fail(
+            "ACCESSORY_BAN must forbid necklace, earrings, and rings "
+            "(product jewelry is composited later)",
+            failures,
+        )
+    if "composited later" not in ban and "do not draw" not in ban:
+        _fail("ACCESSORY_BAN must say jewelry is added later, not drawn by the model", failures)
     for cat in ("necklace", "ring", "bracelet", "earring"):
         for slot in SLOTS:
             p = build_scene_prompt("Sofia", slot, cat, "オフィス").lower()
             n = slot_negative_prompt(slot, SCENE_META[slot]["mode"], cat).lower()
             if "no watch" not in p and "watch" not in n:
                 _fail(f"{cat} {slot}: prompt/negative must ban watches", failures)
+            if "no necklace" not in p and "necklace" not in n:
+                _fail(f"{cat} {slot}: must ban extra necklaces in every scene", failures)
+            if "no earrings" not in p and "earrings" not in n:
+                _fail(f"{cat} {slot}: must ban extra earrings in every scene", failures)
             if "jewelry" not in p and "jewelry" not in n:
                 _fail(f"{cat} {slot}: must ban jewelry", failures)
-            if ACCESSORY_BAN.split(":")[0].lower() not in p and "bare of accessories" not in p:
-                if "no watch" not in p:
-                    _fail(f"{cat} {slot}: missing accessory ban in prompt", failures)
+            if "no jewelry" not in p and "bare neck" not in p:
+                _fail(
+                    f"{cat} {slot}: missing all-scenes extra-jewelry ban in the prompt",
+                    failures,
+                )
+            if "photorealistic" not in p and "real camera photograph" not in p:
+                _fail(f"{cat} {slot}: must ask for a real photograph, not an illustration", failures)
+
+    photo = PHOTO_RULE.lower()
+    if "photorealistic" not in photo or "illustration" not in photo:
+        _fail("PHOTO_RULE must demand a camera photo and forbid illustration", failures)
+    if "illustration" not in NEGATIVE.lower():
+        _fail("NEGATIVE must ban illustration so scenes stay photographs", failures)
 
     turned_ok = 0
     for slot in TURNED_SLOTS:
@@ -221,8 +296,14 @@ def run_checks() -> list[str]:
         _fail("fal billing lock must abort immediately instead of retrying slots", failures)
     if "keeping last frame" not in src or "failed after retries" not in src:
         _fail("scene QA must keep last frame after retries so the job can finish", failures)
+    if "_needs_standing_fallback" not in src:
+        _fail("side-on / over-shoulder QA fail must still try flux standing fallback", failures)
     if "skip_pulid" not in src:
         _fail("ring/bracelet full-body must skip PuLID (it copies crossed-arm busts)", failures)
+    if 'slot == "wide_inset"' not in src:
+        _fail("wide_inset must skip PuLID so the torso stays front-on", failures)
+    if "MAX_WIDE_FLUX_TRIES" not in src:
+        _fail("wide_inset must retry flux standing shots more than once", failures)
     qa = (ROOT / "apps" / "worker" / "worker" / "scene_qa.py").read_text(encoding="utf-8")
     if "face too large for hand-hero" not in qa:
         _fail("scene_qa must reject portrait crops on ring/bracelet wear", failures)
@@ -230,8 +311,18 @@ def run_checks() -> list[str]:
         _fail("scene_qa must reject passport-frontal faces on turned slots", failures)
     if "torso too side-on" not in qa or "body in profile" not in qa:
         _fail("scene_qa must reject side-on / profile bodies (15-degree torso)", failures)
+    if "likely walking profile" not in qa:
+        _fail("scene_qa must reject full-body walking / off-center profile bodies", failures)
+    if "over-shoulder side-on body" not in qa:
+        _fail("scene_qa must reject looking-over-the-shoulder side-on bodies", failures)
+    if "not full-length (likely over-shoulder / arms-crossed bust)" not in qa:
+        _fail("scene_qa must reject over-shoulder bust crops on full-body slots", failures)
+    if "_MIN_TORSO_RATIO_BUSY" not in qa:
+        _fail("scene_qa must still measure torso width on busy backgrounds", failures)
     if "foreground is not the woman" not in qa:
         _fail("scene_qa must reject date shots where the man is the foreground", failures)
+    if "no second person" not in qa:
+        _fail("scene_qa must reject date shots with no man in frame", failures)
     if "arms-crossed bust" not in qa:
         _fail("scene_qa must reject full-body shots that are actually crossed-arm busts", failures)
 
@@ -243,7 +334,7 @@ def _hook_payload(failures: list[str], event: str, loop_count: int) -> dict:
         if event == "stop":
             return {}
         return {
-            "additional_context": "Scene-spec checklist passed (torso 15deg, 7 expressions, date man, hair up+tuck, open+turtleneck, ring/bracelet hands)."
+            "additional_context": "Scene-spec checklist passed (torso 15deg, date two-person, extra jewelry banned in every scene)."
         }
 
     report = "Scene-spec checklist FAILED:\n- " + "\n- ".join(failures)

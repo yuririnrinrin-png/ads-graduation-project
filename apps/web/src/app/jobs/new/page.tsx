@@ -406,7 +406,7 @@ export default function NewJobPage() {
               {ready ? (
                 <>
                   <p className="muted" style={{ fontSize: "0.75rem", margin: 0 }}>
-                    必須が揃っています → 生成可能
+                    必須が揃っています → 生成可能。結果は14日で削除されます。
                   </p>
                   <button className="btn btn-gold" type="submit" disabled={pending}>
                     {pending ? "受付中…" : "10枚を生成する"}

@@ -7,17 +7,21 @@ import {
 } from "@ti-amo/shared";
 import { DeleteJobButton } from "@/components/DeleteJobButton";
 import { prisma } from "@/lib/prisma";
+import { purgeExpiredJobs } from "@/lib/purge-expired";
 import { requirePageSession } from "@/lib/require-page-session";
+import { remainingDays, retentionLabel } from "@/lib/retention";
 
 function statusClass(status: string) {
   if (status === "ready") return "badge badge-ready";
   if (status === "failed") return "badge badge-failed";
+  if (status === "expired") return "badge badge-expired";
   if (status === "running" || status === "queued") return "badge badge-running";
   return "badge";
 }
 
 export default async function HomePage() {
   await requirePageSession();
+  await purgeExpiredJobs();
   const jobs = await prisma.job.findMany({
     orderBy: { createdAt: "desc" },
     include: { persona: true, background: true },
@@ -30,7 +34,7 @@ export default async function HomePage() {
           <p className="section-kicker">Jobs</p>
           <h1 className="section-title">ジョブ</h1>
           <p className="muted" style={{ margin: "0.35rem 0 0", fontSize: "0.875rem" }}>
-            3枚を上げる → 待つ → 直す → ZIP
+            3枚を上げる → 待つ → 直す → ZIP。生成結果は14日で削除されます。
           </p>
         </div>
         <div className="row" style={{ gap: "0.75rem", alignItems: "center" }}>
@@ -66,6 +70,7 @@ export default async function HomePage() {
                   <th>カテゴリ</th>
                   <th>人物</th>
                   <th>作成</th>
+                  <th>保管</th>
                   <th></th>
                 </tr>
               </thead>
@@ -85,6 +90,15 @@ export default async function HomePage() {
                     <td>{CATEGORY_LABELS[job.category as Category] ?? job.category}</td>
                     <td>{job.persona.name}</td>
                     <td className="faint">{job.createdAt.toLocaleString("ja-JP")}</td>
+                    <td
+                      className={
+                        remainingDays(job.createdAt, job.expiresAt) <= 3 || job.status === "expired"
+                          ? "retention-warn"
+                          : "faint"
+                      }
+                    >
+                      {retentionLabel(job.createdAt, job.expiresAt, job.status)}
+                    </td>
                     <td style={{ textAlign: "right" }}>
                       <DeleteJobButton jobId={job.id} />
                     </td>

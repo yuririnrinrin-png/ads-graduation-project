@@ -78,12 +78,18 @@ WEAR_SETTING = {
         "lights softly blurred behind her, sunlit afternoon"
     ),
     "wear_date": (
-        "The WOMAN is the only sharp subject, closest to the camera, in focus. "
-        "A man sits opposite in the BACKGROUND: small, out of focus, we may "
-        "glimpse a blurred silhouette. "
-        "FORBIDDEN: man's hands in the foreground, camera focused on the man, "
-        "woman blurred, shot from behind the man. Fine-dining table, candle, "
-        "two wine glasses. Her TORSO stays square to the lens (under 15 degrees)"
+        "TWO-PERSON DATE PHOTO, not a solo portrait. "
+        "A couple enjoying dinner together, talking across the table. "
+        "The WOMAN is the hero — closest to camera, sharp, jewelry zones unobstructed "
+        "(neck, chest, or her own hands). "
+        "A man sits across from her in the BACKGROUND, smaller than her: "
+        "we see his FACE or three-quarter (eyes, nose), looking at her or talking with her. "
+        "He is slightly blurred, never the hero. "
+        "FORBIDDEN: only the back of the man's head, faceless silhouette, "
+        "solo woman, empty table, man's hands in the foreground, "
+        "focus on the man, woman blurred, man covering her jewelry. "
+        "Fine-dining table, candle, two wine glasses. "
+        "Her TORSO stays square to the lens (under 15 degrees)"
     ),
     "wear_holiday": (
         "sitting on a wooden beach pier railing, ocean waves and palm leaves "
@@ -154,14 +160,25 @@ BODY_FASHION_NECK = {
 # Torso stays jewelry-friendly. Never say "facing camera" about the person as
 # a whole — Flux/PuLID treats that as a frontal FACE.
 BODY_RULE = (
-    "BODY: both shoulders equally visible, chest and collarbones face the camera, "
-    "hips square to the lens, torso yaw under 15 degrees. "
-    "Not a side-on body, not a walking profile, not one shoulder to the camera. "
-    "The HEAD may turn independently; do not rotate the torso with the head."
+    "BODY: STANDING OR SITTING STILL, feet planted if standing, not walking, "
+    "not striding. Both shoulders equally visible, chest and collarbones face "
+    "the camera, hips square to the lens, torso yaw under 15 degrees. "
+    "Not a side-on body, not a walking profile, not a street-fashion side view, "
+    "not one shoulder to the camera. "
+    "The HEAD may turn independently to three-quarter or side; "
+    "do not rotate the torso with the head."
+)
+
+# Catalog shots must look like a camera photo, never fashion illustration.
+PHOTO_RULE = (
+    "REAL CAMERA PHOTOGRAPH of a real woman, photorealistic, natural skin pores "
+    "and real fabric texture, photographic lighting. "
+    "Not an illustration, not digital art, not a drawing, not 3D, not vector."
 )
 
 # Slots that must break the ID photo's front-facing eye-contact pose.
-TURNED_SLOTS = frozenset({"wear_cafe", "wear_date", "body_1", "wide_inset"})
+# wide_inset is full-body: a 45° head turn rotates the TORSO with it.
+TURNED_SLOTS = frozenset({"wear_cafe", "wear_date", "body_1"})
 
 POSE_VARIATION = {
     "wear_office": (
@@ -180,7 +197,7 @@ POSE_VARIATION = {
         "HEAD only: three-quarter, turned 45 degrees, ear visible; "
         "chest still faces the camera. "
         "甘えたような笑顔: coy closed-mouth smile. "
-        "GAZE: looking off-camera and slightly down, no eye contact"
+        "GAZE: looking toward the man across the table, slightly down, no eye contact"
     ),
     "wear_holiday": (
         "HEAD: tilted to one shoulder, turned about 25 degrees. "
@@ -188,9 +205,10 @@ POSE_VARIATION = {
         "GAZE: toward camera but squinting softly from the smile, not a stare"
     ),
     "body_1": (
-        "BODY stays front-on (both shoulders visible, yaw under 15 degrees). "
+        "BODY stays front-on (both shoulders visible, yaw under 15 degrees), "
+        "STANDING STILL, feet planted, we see the FRONT of her clothes and both hips. "
         "HEAD only: turned 50 degrees, ear and jaw shown, three-quarter FACE. "
-        "Not a side-on body, not a back view. "
+        "Not a side-on body, not a walking profile, not a back view. "
         "上品な微笑: calm closed-mouth smile. "
         "GAZE: DOWNCAST, looking along her cheek, never at camera"
     ),
@@ -200,8 +218,11 @@ POSE_VARIATION = {
         "GAZE: toward camera but crinkled and soft"
     ),
     "wide_inset": (
-        "HEAD only: three-quarter, turned 45 degrees, ear and jaw shown; "
-        "both shoulders still face the camera. "
+        "BODY: STANDING STILL, FRONT VIEW, feet planted, not walking, not striding. "
+        "Both shoulders and both hips face the camera, FRONT of her clothes visible, "
+        "torso yaw under 15 degrees. "
+        "HEAD: turned only about 20 degrees, a slight three-quarter. "
+        "Do not turn the body with the head. Not a side view, not looking over the shoulder. "
         "穏やかな微笑: soft closed-mouth smile. "
         "GAZE: downcast, looking down and away, no eye contact"
     ),
@@ -252,9 +273,9 @@ HAIR_STYLE = {
     ),
     "wide_inset": (
         "tuck",
-        "LONG HAIR WORN COMPLETELY DOWN, length clearly visible past the "
-        "shoulders down her back, loosely tucked behind both ears so earlobes "
-        "show. This is NOT an updo. Hair mass behind her is obvious",
+        "LONG HAIR WORN DOWN, loosely tucked behind both ears so earlobes "
+        "show, length visible while BOTH SHOULDERS still face the camera. "
+        "This is NOT an updo and NOT a side-view of the hair",
     ),
 }
 
@@ -280,7 +301,9 @@ SLOT_NEGATIVE_EXTRA = {
     ),
     "wear_date": (
         "looking at the camera, eye contact, side-on body, body in profile, "
-        "passport photo, teeth showing, big laugh"
+        "passport photo, teeth showing, big laugh, "
+        "solo portrait, one person, woman alone, empty table, no man, "
+        "only the back of a man's head"
     ),
     "wear_holiday": (
         "eyes closed, downcast looking away, closed-mouth only, coy pout, "
@@ -288,7 +311,7 @@ SLOT_NEGATIVE_EXTRA = {
     ),
     "body_1": (
         "looking at the camera, eye contact, "
-        "side-on body, body in profile, standing in profile, "
+        "side-on body, body in profile, standing in profile, walking, striding, "
         "passport photo, teeth showing, big grin, tight headshot, "
         "back view, rear view, walking away"
     ),
@@ -298,6 +321,8 @@ SLOT_NEGATIVE_EXTRA = {
     ),
     "wide_inset": (
         "looking at the camera, eye contact, side-on body, body in profile, "
+        "walking, striding, candid street, fashion-week side view, "
+        "looking over the shoulder, over-the-shoulder, one shoulder to camera, "
         "passport photo, big grin, teeth showing, bun, ponytail, "
         "updo, tight headshot"
     ),
@@ -359,9 +384,13 @@ WEAR_SETTING_HAND = {
     ),
     "wear_cafe": "wooden cafe table, cup and plate to the side of her hands",
     "wear_date": (
-        "She is sharp in the foreground, her own forearm on the table. "
-        "A man is small and blurred in the BACKGROUND only. "
-        "FORBIDDEN: man's hands in the foreground, woman out of focus"
+        "TWO-PERSON DATE PHOTO. She is sharp in the foreground, her own forearm on the table, "
+        "jewelry zone on her hands unobstructed. "
+        "A couple enjoying dinner: a man sits across from her in the BACKGROUND, "
+        "smaller, slightly blurred, but we see his FACE or three-quarter, "
+        "looking at her or talking with her. "
+        "FORBIDDEN: only the back of the man's head, solo woman, empty table, "
+        "man's hands in the foreground, woman out of focus, man covering her hands"
     ),
     "wear_holiday": "wooden pier railing, golden hour, ocean behind",
 }
@@ -402,7 +431,8 @@ FULL_HAND_POSE = {
             "a gap of clothing between each arm and the torso."
         ),
         "wide_inset": (
-            "One hand rests on her thigh, the other hangs straight. Fingertips visible."
+            "STANDING STILL, not walking. One hand rests on her thigh, "
+            "the other hangs straight. Fingertips visible. Both hips face the camera."
         ),
     },
     "bracelet": {
@@ -415,8 +445,8 @@ FULL_HAND_POSE = {
             "a gap of clothing between each arm and the torso, both wrists uncovered."
         ),
         "wide_inset": (
-            "One wrist rests by her thigh, the other arm hangs straight. "
-            "Both wrists visible."
+            "STANDING STILL, not walking. One wrist rests by her thigh, "
+            "the other arm hangs straight. Both wrists visible. Both hips face the camera."
         ),
     },
 }
@@ -434,7 +464,8 @@ HAND_HEAD_POSE = {
         "Both shoulders face the camera. Torso yaw under 15 degrees."
     ),
     "wear_date": (
-        "HEAD only: turned 45 degrees, ear visible. 甘えたような笑顔. Looking off-camera down. "
+        "HEAD only: turned 45 degrees, ear visible. 甘えたような笑顔. "
+        "Looking toward the man across the table. "
         "Chest to the lens. Torso yaw under 15 degrees."
     ),
     "wear_holiday": (
@@ -451,8 +482,9 @@ HAND_HEAD_POSE = {
         "Torso yaw under 15 degrees."
     ),
     "wide_inset": (
-        "HEAD only: turned 45 degrees, ear visible. 穏やかな微笑. Looking down. "
-        "FRONT of her clothes, both shoulders visible. Torso yaw under 15 degrees."
+        "HEAD: turned about 20 degrees. 穏やかな微笑. Looking down. "
+        "STANDING STILL, FRONT VIEW, not walking. FRONT of her clothes, both shoulders and "
+        "both hips visible. Torso yaw under 15 degrees. Not a side view."
     ),
 }
 
@@ -460,10 +492,10 @@ HAND_NEGATIVE = (
     "headshot, no hands, hands cut off, waist-up, bust crop, cropped at the hips, "
     "laptop, computer, monitor, keyboard, notebook computer, "
     "object covering hands, cup covering fingers, "
-    "back to camera, rear view, walking away, over-the-shoulder, "
+    "back to camera, rear view, walking away, walking, striding, over-the-shoulder, "
     "side-on body, body in profile, standing in profile, "
     "hands in pockets, gloves, extra fingers, deformed hands, "
-    "watch, wristwatch, smartwatch, necklace, earrings, rings, bracelet, jewelry, "
+    "watch, wristwatch, smartwatch, necklace, chain, pendant, earrings, rings, bracelet, jewelry, "
     "arms crossed, hands on face, hands behind back"
 )
 
@@ -477,19 +509,24 @@ HAND_NEGATIVE_BY_CATEGORY = {
 HAND_SLOT_NEGATIVE = {
     "wear_office": "laptop, computer, monitor, keyboard, screen in front of hands",
     "wear_cafe": "holding a cup, gripping a mug",
-    "wear_date": "hands under the table",
+    "wear_date": "hands under the table, solo portrait, woman alone, empty table, no man",
     "wear_holiday": "hands behind the railing",
     "body_1": "back view, rear view, walking away, photographed from behind, side-on body, body in profile, arms crossed, arms folded",
     "body_2": "hands on cheeks, cropped at the hips, arms crossed, arms folded, side-on body",
-    "wide_inset": "back view, rear view, walking away, cropped at the hips, side-on body, body in profile, arms crossed, arms folded",
+    "wide_inset": "back view, rear view, walking, striding, walking away, cropped at the hips, side-on body, body in profile, arms crossed, arms folded",
 }
 
 NEGATIVE = (
-    "jewelry, necklace, earrings, rings, bracelet, watch, wristwatch, smartwatch, "
-    "fitness tracker, accessories, "
+    "illustration, cartoon, anime, manga, digital art, vector art, painting, "
+    "drawing, cgi, 3d render, stylized, comic, cel shaded, flat color, "
+    "fashion illustration, smooth airbrushed skin, "
+    "jewelry, necklace, layered necklace, thin chain, pendant, choker, "
+    "earrings, hoop earrings, stud earrings, rings, bracelet, "
+    "watch, wristwatch, smartwatch, fitness tracker, accessories, "
     "text, watermark, logo, deformed hands, extra fingers, low quality, blurry, "
     "back to camera, body facing away, over-the-shoulder body twist, "
     "side-on body, body in profile, standing in profile, one shoulder to camera, "
+    "walking, striding, candid walking shot, street-fashion side view, "
     "passport photo, identical polite smile, piercing stare into the lens, "
     "extreme close-up, tight face-only crop, "
     "face filling the entire frame, cropped above the collarbone, "
@@ -497,7 +534,10 @@ NEGATIVE = (
 )
 
 ACCESSORY_BAN = (
-    "BARE of accessories: uncovered empty wrists, bare neck, bare earlobes"
+    "NO jewelry of any kind: no necklace, no chain, no pendant, no choker, "
+    "no earrings, no rings, no bracelet, no watch. "
+    "Bare neck, bare earlobes, uncovered empty wrists. "
+    "Jewelry will be composited later — do not draw any."
 )
 
 NEGATIVE_BUST = NEGATIVE + (
@@ -511,6 +551,7 @@ NEGATIVE_BUST = NEGATIVE + (
 NEGATIVE_FULL_BODY = NEGATIVE + (
     ", extreme close-up, tight headshot, face-only crop, cut off above the waist, "
     "waist-up, three-quarter crop, folded arms, arms across the chest, "
+    "walking, striding, motion blur, body in profile, side-on walking pose, "
     "watch on wrist, timepiece"
 )
 
@@ -565,7 +606,7 @@ def slot_pulid_params(slot: str | None, mode: str, category: str | None = None) 
     400 "Failed to get ID embeddings (no face detected): facexlib align face fail".
     """
     if slot == "wear_date":
-        return {"id_weight": 0.20, "true_cfg": 3.8, "guidance_scale": 6.8}
+        return {"id_weight": 0.18, "true_cfg": 4.0, "guidance_scale": 7.0}
     if category in HAND_FOCUS_CATEGORIES:
         return {"id_weight": 0.18, "true_cfg": 4.0, "guidance_scale": 7.0}
     turned = slot in TURNED_SLOTS
@@ -594,14 +635,14 @@ def slot_negative_prompt(slot: str, mode: str, category: str | None = None) -> s
         else:
             extras.append("plunging neckline")
         extra = ", ".join(e for e in extras if e)
-        extra = extra + ", watch, wristwatch, smartwatch, necklace, earrings, jewelry"
+        extra = extra + ", watch, wristwatch, smartwatch, necklace, chain, pendant, earrings, jewelry"
         return extra
     base = NEGATIVE_FULL_BODY if mode == "full" else NEGATIVE_BUST
     extras = [HAIR_NEGATIVE_BY_STATE.get(hair_state(slot), "")]
     extras.append(SLOT_NEGATIVE_EXTRA.get(slot, ""))
     extras.append(
-        "watch, wristwatch, smartwatch, fitness tracker, necklace, earrings, "
-        "rings, bracelet, jewelry"
+        "watch, wristwatch, smartwatch, fitness tracker, necklace, chain, pendant, "
+        "choker, earrings, rings, bracelet, jewelry"
     )
     if NECKLINE.get(slot) == "open":
         extras.append("turtleneck, high neck, mock neck")
@@ -652,7 +693,7 @@ def build_scene_prompt(
 
     pose = POSE_VARIATION.get(slot, "torso square, distinct head angle")
     hair_line = _hair_line(persona_name, slot)
-    lead = f"{ACCESSORY_BAN} {pose} {hair_line} {BODY_RULE}"
+    lead = f"{PHOTO_RULE} {ACCESSORY_BAN} {pose} {hair_line} {BODY_RULE}"
 
     if meta["mode"] == "bust":
         setting = WEAR_SETTING.get(slot, "lifestyle interior, soft natural light")
@@ -660,8 +701,12 @@ def build_scene_prompt(
         companion = ""
         if slot == "wear_date":
             companion = (
-                "The WOMAN stays sharp in the foreground. A man may appear "
-                "small and out of focus in the BACKGROUND only. "
+                "TWO-PERSON DATE PHOTO, not a solo portrait. "
+                "A couple enjoying dinner together, talking. "
+                "The woman is the hero, closest, sharp, jewelry zones unobstructed. "
+                "The man is a real second person in the background — FACE or "
+                "three-quarter visible, looking at her or talking with her — "
+                "not only the back of his head. Slightly blurred, never the hero. "
                 "Her torso stays under 15 degrees to the lens. "
             )
         return (
@@ -678,15 +723,22 @@ def build_scene_prompt(
     tone_bit = TONE_SETTING.get(tone_label or "", "wearing a stylish coordinated outfit")
     neck = BODY_FASHION_NECK.get(NECKLINE.get(slot, "open"), "")
     if slot == "wide_inset":
-        setting = "standing in an airy studio space with plain soft-toned background"
+        setting = (
+            "STANDING STILL in a real photo studio, feet planted, camera in front of her, "
+            "soft photographic lighting, not a street, not walking"
+        )
     else:
-        setting = f"standing in a softly lit lifestyle interior, {tone_bit}"
+        setting = (
+            f"STANDING STILL in a softly lit lifestyle interior, feet planted, "
+            f"camera in front of her, {tone_bit}"
+        )
     return (
         f"{lead} "
-        f"Three-quarter length fashion photograph of {look}. "
-        f"Standing, camera framing from the top of her head down "
+        f"Photorealistic catalog standing photograph of {look}, not a walking candid. "
+        f"Standing still, camera framing from the top of her head down "
         f"to at least mid-thigh so her full coordinated outfit and styling are "
-        f"clearly visible. {neck}. {setting}. "
+        f"clearly visible. We see the FRONT of her clothes and both hips. {neck}. "
+        f"{setting}. "
         "Same woman as the identity reference but do NOT copy that photo's "
         "frontal pose or eye contact. Head angle and gaze must match "
         "the HEAD / GAZE lines above. "
@@ -732,8 +784,9 @@ def _build_hand_scene_prompt(
 
     if mode == "bust":
         setting = WEAR_SETTING_HAND.get(slot, "lifestyle interior")
+        two_person = "TWO-PERSON DATE PHOTO, not a solo portrait. " if slot == "wear_date" else ""
         return (
-            f"{ACCESSORY_BAN} {framing} {present} {hand_pose} {pose} {hair} {BODY_RULE} "
+            f"{two_person}{PHOTO_RULE} {ACCESSORY_BAN} {framing} {present} {hand_pose} {pose} {hair} {BODY_RULE} "
             f"Photorealistic jewelry catalog photo of {look}. {fashion}. "
             f"Setting: {setting}. "
             "Do not copy the identity photo's head-and-shoulders crop. "
@@ -751,7 +804,7 @@ def _build_hand_scene_prompt(
     standing_hands = FULL_HAND_POSE.get(category, {}).get(slot, "")
     return (
         f"{ACCESSORY_BAN} {extra} {present} {standing_hands} {pose} {hair} {BODY_RULE} "
-        f"Full-length photo of {look}. {fashion}. {setting}. "
+        f"{PHOTO_RULE} Photorealistic full-length photo of {look}. {fashion}. {setting}. "
         "Do not copy the identity photo's tight crop. "
         "Fingertips stay in frame and stay obvious. No text."
     )
@@ -1172,13 +1225,56 @@ def generate_all_scenes(
 
 MAX_SCENE_TRIES = 2
 MAX_FLUX_TRIES = 1
+MAX_WIDE_FLUX_TRIES = 3
+
+
+def _needs_standing_fallback(fails: list[str]) -> bool:
+    blob = " ".join(fails).lower()
+    return any(
+        k in blob
+        for k in (
+            "torso too side-on",
+            "body in profile",
+            "walking profile",
+            "over-shoulder",
+            "not full-length",
+            "no second person",
+            "man missing",
+        )
+    )
+
+
+def _candidate_rank(fails: list[str]) -> tuple:
+    """Higher is better. Never prefer a side-on body over a front-ish one."""
+    blob = " ".join(fails).lower()
+    side = any(
+        k in blob
+        for k in (
+            "torso too side-on",
+            "over-shoulder",
+            "body in profile",
+            "walking profile",
+        )
+    )
+    crop = "not full-length" in blob or "face too large" in blob
+    ratio = 0.0
+    for line in fails:
+        if "chest/face=" in line:
+            try:
+                ratio = max(ratio, float(line.split("chest/face=")[1].split()[0]))
+            except ValueError:
+                pass
+    return (0 if side else 1, 0 if crop else 1, ratio)
 
 
 def _standing_catalog_lead() -> str:
     return (
-        "Full-length standing fashion catalog photograph, 35mm lens, "
-        "camera several meters away. Head near the top edge, shoes visible "
-        "at the bottom edge. Both shoulders face the camera. "
+        "REAL CAMERA PHOTOGRAPH, photorealistic, not an illustration. "
+        "FRONT VIEW standing catalog photograph. Camera is in FRONT of her. "
+        "We see both shoulders, both hips, and the FRONT of her clothes. "
+        "NOT a side view, NOT a profile, NOT walking, NOT looking over the shoulder. "
+        "35mm lens, camera several meters away. Head near the top edge, shoes visible "
+        "at the bottom edge. STANDING STILL, feet planted. "
         "Both arms hang straight down with a gap of "
         "clothing between each arm and the torso. Uncovered empty wrists. "
     )
@@ -1196,12 +1292,14 @@ def _generate_scene_until_qa(
 ) -> Image.Image:
     from worker.scene_qa import evaluate_scene
 
-    skip_pulid = mode == "full" and category in HAND_FOCUS_CATEGORIES
-    last_fails: list[str] = []
-    last_img: Image.Image | None = None
+    # PuLID copies the ID bust. On the wide full-body slot that rotates the
+    # whole person into profile. Ring/bracelet full shots have the same issue.
+    skip_pulid = (mode == "full" and category in HAND_FOCUS_CATEGORIES) or slot == "wide_inset"
+    candidates: list[tuple[Image.Image, list[str]]] = []
     torso_retry = (
-        "RETRY: both shoulders face the camera equally, chest to the lens, "
-        "not a side-on or profile body. The head may turn. "
+        "RETRY: FRONT VIEW, STANDING STILL, both shoulders face the camera equally, "
+        "chest and both hips to the lens, not walking, not a side-on or profile body, "
+        "not looking over the shoulder. The head may turn a little; the torso must not. "
     )
     if not skip_pulid:
         for attempt in range(MAX_SCENE_TRIES):
@@ -1226,18 +1324,18 @@ def _generate_scene_until_qa(
             fails = evaluate_scene(img, slot, category)
             if not fails:
                 return img
-            last_img = img
-            last_fails = fails
+            candidates.append((img, fails))
             logger.warning(
                 "scene qa slot=%s try=%s/%s %s",
                 slot, attempt + 1, MAX_SCENE_TRIES, fails,
             )
         logger.warning("scene qa slot=%s pulid exhausted — flux/dev fallback", slot)
 
-    # Flux is a last resort only when PuLID produced nothing. Extra flux
-    # retries after a usable frame burn credit and the job still keeps the last shot.
-    if last_img is None:
-        for attempt in range(MAX_FLUX_TRIES):
+    last_fails = candidates[-1][1] if candidates else []
+    need_standing = skip_pulid or not candidates or _needs_standing_fallback(last_fails)
+    flux_tries = MAX_WIDE_FLUX_TRIES if slot == "wide_inset" else MAX_FLUX_TRIES
+    if need_standing:
+        for attempt in range(flux_tries):
             use_prompt = prompt
             if mode == "full":
                 use_prompt = torso_retry + _standing_catalog_lead() + prompt
@@ -1253,22 +1351,20 @@ def _generate_scene_until_qa(
             fails = evaluate_scene(img, slot, category)
             if not fails:
                 return img
-            last_img = img
-            last_fails = fails
+            candidates.append((img, fails))
             logger.warning(
                 "scene qa slot=%s flux try=%s/%s %s",
-                slot, attempt + 1, MAX_FLUX_TRIES, fails,
+                slot, attempt + 1, flux_tries, fails,
             )
-    if last_img is None:
-        raise RuntimeError(
-            f"scene qa slot={slot} failed after retries: {last_fails}"
-        )
+    if not candidates:
+        raise RuntimeError(f"scene qa slot={slot} failed after retries: {last_fails}")
+    best_img, best_fails = max(candidates, key=lambda c: _candidate_rank(c[1]))
     logger.warning(
         "scene qa slot=%s failed after retries, keeping last frame: %s",
         slot,
-        last_fails,
+        best_fails,
     )
-    return last_img
+    return best_img
 
 
 def _tone_for_slot(slot: str, tone_names: list[str]) -> str | None:

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import path from "path";
 import sharp from "sharp";
-import { CATEGORIES, DETAIL_SLOTS, METALS } from "@ti-amo/shared";
+import { CATEGORIES, DETAIL_SLOTS, JOB_RETENTION_DAYS, METALS } from "@ti-amo/shared";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import {
@@ -11,6 +11,7 @@ import {
   ensureInputDir,
   enqueueJob,
 } from "@/lib/queue";
+import { purgeExpiredJobs } from "@/lib/purge-expired";
 
 const metaSchema = z.object({
   category: z.enum(CATEGORIES),
@@ -26,6 +27,7 @@ export async function GET() {
   const { error } = await requireSession();
   if (error) return error;
 
+  await purgeExpiredJobs();
   const jobs = await prisma.job.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -117,7 +119,7 @@ export async function POST(req: Request) {
   }
 
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 14);
+  expiresAt.setDate(expiresAt.getDate() + JOB_RETENTION_DAYS);
 
   const job = await prisma.job.create({
     data: {

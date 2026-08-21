@@ -1,4 +1,4 @@
-# Ti amo Jewelry Studio — Python worker (Phase 2–4)
+# Ti amo Jewelry Studio — Python worker (Phase 2–5)
 
 Redis キュー `tiamo:jobs` を待ち、1ジョブずつ:
 
@@ -22,6 +22,12 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 python -m worker.pipeline
+```
+
+期限切れジョブのファイルだけ今すぐ消す（通常は起動中に約10分おき）:
+
+```bash
+python -m worker.pipeline purge
 ```
 
 単発実行（デバッグ）:
