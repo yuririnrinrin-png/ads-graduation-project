@@ -54,6 +54,11 @@ export async function enqueueJob(
   jobId: string,
   extra?: Omit<QueuePayload, "jobId">
 ) {
+  if (process.env.VERCEL && !process.env.REDIS_URL) {
+    throw new Error(
+      "生成キューに繋がっていません。公開画面だけではジョブを作れません。社内PCの localhost:3000 で生成してください。"
+    );
+  }
   const r = getRedis();
   const hasExtra = Boolean(extra?.fromStage || extra?.slots?.length);
   const payload = hasExtra ? JSON.stringify({ jobId, ...extra }) : jobId;

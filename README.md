@@ -33,8 +33,8 @@
     |
     v
  [今ここ] Phase 5  本番固め
-                14日削除（完了） / 社内1台で運用
-                クラウドホストは未決
+                14日削除・1ジョブ200円・学校用 Vercel 公開（完了）
+                ワーカーのクラウド接続は会社で毎日使う段階
 
  ユーザーの流れ（完成時）:
   ログイン → 3枚UP+設定 → 待つ → 直す → ZIP
@@ -47,7 +47,7 @@
 | 2 | 切り抜き＋背景＋地金でディテール 3 枚 | **完了** |
 | 3 | 人物シーン生成＋実物合成＋ transform | **完了**（persona 本番写真は任意） |
 | 4 | インセット選び直し・枠再生成・失敗リトライ・プリセット CRUD・進捗表示 | **完了** |
-| 5 | 画質・14 日削除・デプロイ | **進行中**（14日削除・死活確認まで。クラウドホストは未決） |
+| 5 | 画質・14 日削除・デプロイ | **進行中**（14日削除・200円停止・学校用 Vercel 公開まで。ワーカーは提出までこのPC） |
 
 ## ドキュメント
 
@@ -131,11 +131,12 @@ python -m worker.pipeline
 - ダメな枠の**再生成**（人物プリセットは維持）・失敗時は**最初から／失敗した段階からリトライ**  
 - 引き＋インセットの右下写真はディテール A/B/C から選び直し可  
 - 生成結果は **14 日で自動削除**（一覧に残り日数。期限切れ後は ZIP 不可）  
+- 1ジョブの人物生成は **200円まで**（同じジョブの再生成も含む。超えたらそのジョブを停止）  
 - 死活確認: http://localhost:3000/api/health  
 
-## 本番（社内1台）
+## 本番（提出まで / 毎日使うとき）
 
-v1 の本番は、開発と同じ構成を1台に載せます（Postgres / Redis は Docker、画面とワーカーはホスト）。
+提出までは、生成はこの PC で行います（Postgres / Redis は Docker、画面とワーカーはホスト）。
 
 ```bash
 docker compose up -d
@@ -144,4 +145,8 @@ npm run dev          # または npm run build && npm run start -w @ti-amo/web
 cd apps/worker && .venv\Scripts\python.exe -m worker.pipeline
 ```
 
-クラウド（Vercel 等）への載せ先は [REQUIREMENTS.md](docs/REQUIREMENTS.md) §9 の未決です。 
+学校提出用の公開 URL: **https://ads-graduation-project-web.vercel.app**（本物のアプリ・ログイン必須。ID `ec-team` / パスワード `studio`）。人物生成ワーカーは載せない。
+
+Vercel の Root Directory は `apps/web`。Postgres は Neon（Vercel Storage）。環境変数は `DATABASE_URL` / `NEXTAUTH_URL` / `NEXTAUTH_SECRET` / `AUTH_USER` / `AUTH_PASSWORD`。
+
+Vercel 上ではジョブの新規生成はできません（Redis と画像ディスクがこの PC にあるため）。生成は `localhost:3000`。会社で毎日使う段階で、ワーカーを VPS / Railway / Render に移し、Redis と画像をクラウドへ繋ぎます。詳細は [REQUIREMENTS.md](docs/REQUIREMENTS.md) §9。 

@@ -5,6 +5,8 @@ import {
   COMPOSITE_SLOTS,
   DEFAULT_TRANSFORM,
   DETAIL_SLOTS,
+  JOB_COST_YEN_LIMIT,
+  canAffordFalCall,
   getAnchors,
   isBodySlot,
   JOB_STATUS_LABELS,
@@ -62,6 +64,7 @@ function ReviewView({
     updatedAt: Date;
     createdAt: Date;
     expiresAt: Date | null;
+    apiSpendYen: number;
   };
   transforms: Partial<Record<SlotKey, SlotTransform[]>>;
 }) {
@@ -70,6 +73,7 @@ function ReviewView({
   const wears = SLOT_KEYS.slice(3, 7) as SlotKey[];
   const bodies = SLOT_KEYS.slice(7, 10) as SlotKey[];
   const adjustable = new Set<string>(COMPOSITE_SLOTS);
+  const canRegenFal = canAffordFalCall(job.apiSpendYen);
 
   return (
     <div className="frame anim-rise">
@@ -85,6 +89,7 @@ function ReviewView({
             ジョブ {job.id.slice(0, 8)} · 同一人物 {job.persona.name} · 2000×2000
             {" · "}
             {retentionLabel(job.createdAt, job.expiresAt)}
+            {` · 人物生成 約${job.apiSpendYen}/${JOB_COST_YEN_LIMIT}円`}
             {remainingDays(job.createdAt, job.expiresAt) <= 3
               ? " · 期限前に ZIP を保存してください"
               : ""}
@@ -109,7 +114,7 @@ function ReviewView({
           <h3 className="review-group-title">Detail · AI人物なし · 01–03</h3>
           <div className="slot-grid-3">
             {details.map((slot) => (
-              <SlotCardClient key={slot} jobId={job.id} slot={slot} imageVersion={imageVersion} />
+              <SlotCardClient key={slot} jobId={job.id} slot={slot} imageVersion={imageVersion} canRegenFal={canRegenFal} />
             ))}
           </div>
         </div>
@@ -127,6 +132,7 @@ function ReviewView({
                 category={job.category as Category}
                 body={false}
                 imageVersion={imageVersion}
+                canRegenFal={canRegenFal}
               />
             ))}
           </div>
@@ -150,6 +156,7 @@ function ReviewView({
                     ? (job.insetSlot as DetailSlot)
                     : "detail_a"
                 }
+                canRegenFal={canRegenFal}
               />
             ))}
           </div>

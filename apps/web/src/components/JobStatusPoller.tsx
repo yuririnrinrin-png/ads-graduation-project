@@ -14,6 +14,7 @@ export function JobStatusPoller({ jobId, initialStatus }: Props) {
   const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [stage, setStage] = useState<string | null>(null);
+  const [spendYen, setSpendYen] = useState<number | null>(null);
 
   useEffect(() => {
     setStatus(initialStatus);
@@ -31,10 +32,12 @@ export function JobStatusPoller({ jobId, initialStatus }: Props) {
         const data = await res.json();
         const nextStatus = data.job?.status as string | undefined;
         const nextStage = (data.job?.stage as string | undefined) ?? null;
+        const nextSpend = typeof data.job?.apiSpendYen === "number" ? data.job.apiSpendYen : null;
         if (!nextStatus || cancelled) return;
-        if (nextStatus !== status || nextStage !== stage) {
+        if (nextStatus !== status || nextStage !== stage || nextSpend !== spendYen) {
           setStatus(nextStatus);
           setStage(nextStage);
+          setSpendYen(nextSpend);
           router.refresh();
         }
       } catch {
@@ -47,7 +50,7 @@ export function JobStatusPoller({ jobId, initialStatus }: Props) {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [jobId, status, stage, router]);
+  }, [jobId, status, stage, spendYen, router]);
 
   return null;
 }

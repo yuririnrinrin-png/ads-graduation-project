@@ -294,6 +294,11 @@ def run_checks() -> list[str]:
         _fail("QA must not skip flux/dev fallback after PuLID fails", failures)
     if "FalBillingError" not in src or "_is_billing_error" not in src:
         _fail("fal billing lock must abort immediately instead of retrying slots", failures)
+    if "JobCostLimitError" not in src:
+        _fail("per-job yen cap must abort fal calls instead of retrying slots", failures)
+    cost_src = (ROOT / "apps" / "worker" / "worker" / "job_cost.py").read_text(encoding="utf-8")
+    if "before_fal_call" not in cost_src or "apiSpendYen" not in cost_src:
+        _fail("job_cost.py must record yen spend and block before the next fal call", failures)
     if "keeping last frame" not in src or "failed after retries" not in src:
         _fail("scene QA must keep last frame after retries so the job can finish", failures)
     if "_needs_standing_fallback" not in src:

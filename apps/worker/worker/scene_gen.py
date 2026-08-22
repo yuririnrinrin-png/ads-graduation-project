@@ -21,6 +21,7 @@ from urllib.request import urlopen
 from PIL import Image, ImageDraw, ImageFont
 
 from worker.image_io import open_image, save_image
+from worker.job_cost import JobCostLimitError
 
 logger = logging.getLogger("tiamo.worker.scene")
 
@@ -916,14 +917,20 @@ def _billing_message() -> str:
 
 def _fal_subscribe(model: str, arguments: dict) -> dict:
     import fal_client
+    from worker.job_cost import JobCostLimitError, after_fal_call, before_fal_call
 
     logger.info("fal subscribe model=%s", model)
+    before_fal_call(model)
     try:
-        return fal_client.subscribe(model, arguments=arguments)
+        result = fal_client.subscribe(model, arguments=arguments)
+    except JobCostLimitError:
+        raise
     except Exception as exc:
         if _is_billing_error(exc):
             raise FalBillingError(_billing_message()) from exc
         raise
+    after_fal_call(model)
+    return result
 
 
 def _image_url_from_result(result: dict) -> str:
@@ -1014,7 +1021,7 @@ def generate_scene_fal(
     }
     try:
         result = _fal_subscribe("fal-ai/flux-pulid", arguments)
-    except FalBillingError:
+    except (FalBillingError, JobCostLimitError):
         raise
     except Exception as exc:
         if not _is_no_face_error(exc):
@@ -1023,7 +1030,7 @@ def generate_scene_fal(
         arguments["seed"] = random.randint(1, 2_147_483_647)
         try:
             result = _fal_subscribe("fal-ai/flux-pulid", arguments)
-        except FalBillingError:
+        except (FalBillingError, JobCostLimitError):
             raise
         except Exception as retry_exc:
             if _is_no_face_error(retry_exc):
@@ -1203,6 +1210,8 @@ def generate_all_scenes(
                 )
                 break
             except FalBillingError:
+                raise
+            except JobCostLimitError:
                 raise
             except PulidNoFaceError as exc:
                 if rebuilt_id:

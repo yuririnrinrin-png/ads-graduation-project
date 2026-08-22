@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import {
   CATEGORY_LABELS,
+  JOB_COST_YEN_LIMIT,
   PIPELINE_STAGE_LABELS,
   PROGRESS_STEPS,
+  canAffordFalCall,
   type Category,
   type PipelineStage,
 } from "@ti-amo/shared";
@@ -21,6 +23,7 @@ type JobLite = {
   background: { name: string };
   createdAt: string | Date;
   updatedAt: string | Date;
+  apiSpendYen?: number;
 };
 
 function progressIndex(stage: string | null | undefined): number {
@@ -85,6 +88,8 @@ export function ProgressPanel({
   }, [failed]);
 
   const stuck = !failed && now - updatedAt > 12 * 60 * 1000;
+  const spent = job.apiSpendYen ?? 0;
+  const costLimited = !canAffordFalCall(spent);
 
   return (
     <div className="frame anim-rise">
@@ -100,6 +105,9 @@ export function ProgressPanel({
             </h1>
             <p className="muted" style={{ maxWidth: "28rem", margin: "0.5rem auto 0", fontSize: "0.875rem" }}>
               {job.error ?? `段階「${stageLabel}」でエラー。`}
+            </p>
+            <p className="faint" style={{ fontSize: "0.75rem", margin: "0.5rem auto 0" }}>
+              人物生成 約{spent}/{JOB_COST_YEN_LIMIT}円
             </p>
           </>
         ) : (
@@ -120,6 +128,7 @@ export function ProgressPanel({
             </p>
             <p className="progress-leave">
               この画面を閉じても生成は続きます。一覧からいつでも戻れます。
+              {spent > 0 ? ` 人物生成 約${spent}/${JOB_COST_YEN_LIMIT}円。` : ""}
             </p>
           </>
         )}
@@ -159,9 +168,9 @@ export function ProgressPanel({
         </ol>
 
         {failed ? (
-          <RetryActions jobId={job.id} />
+          <RetryActions jobId={job.id} costLimited={costLimited} />
         ) : stuck ? (
-          <RetryActions jobId={job.id} stuck />
+          <RetryActions jobId={job.id} stuck costLimited={costLimited} />
         ) : null}
       </div>
     </div>

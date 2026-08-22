@@ -173,6 +173,50 @@ export const PROGRESS_POLL_MS = 4000;
 /** Generated files are deleted this many days after job creation (REQUIREMENTS §6). */
 export const JOB_RETENTION_DAYS = 14;
 
+/**
+ * Per-job fal.ai spend cap (REQUIREMENTS §9). Same job's slot regen counts.
+ * Worker is the live gate; these numbers must match apps/worker/worker/job_cost.py.
+ */
+export const JOB_COST_YEN_LIMIT = 200;
+export const USD_JPY_RATE_DEFAULT = 150;
+export const FAL_GEN_SIZE = 1024;
+export const FAL_USD_PER_MP_FLUX_DEV = 0.025;
+export const FAL_USD_PER_MP_FLUX_PULID = 0.0333;
+
+export function falBilledMegapixels(size = FAL_GEN_SIZE): number {
+  return Math.max(1, Math.ceil((size * size) / 1_000_000));
+}
+
+export function yenForFalModel(model: "flux-dev" | "flux-pulid"): number {
+  const usdPerMp =
+    model === "flux-dev" ? FAL_USD_PER_MP_FLUX_DEV : FAL_USD_PER_MP_FLUX_PULID;
+  const usd = usdPerMp * falBilledMegapixels();
+  return Math.max(1, Math.ceil(usd * USD_JPY_RATE_DEFAULT));
+}
+
+/** Conservative 1-call estimate (PuLID). Use this to block the next scene call. */
+export const FAL_CALL_YEN_PULID = yenForFalModel("flux-pulid");
+export const FAL_CALL_YEN_FLUX_DEV = yenForFalModel("flux-dev");
+
+export function canAffordFalCall(
+  spentYen: number,
+  nextYen = FAL_CALL_YEN_PULID,
+  limit = JOB_COST_YEN_LIMIT
+): boolean {
+  return spentYen + nextYen <= limit;
+}
+
+export function jobCostLimitMessage(
+  spentYen: number,
+  limit = JOB_COST_YEN_LIMIT
+): string {
+  return (
+    `このジョブの画像生成費が上限の${limit}円に達したため、停止しました` +
+    `（いま約${spentYen}円）。同じジョブの再生成もこの上限に含みます。` +
+    "新しいジョブを作ってください。"
+  );
+}
+
 /** Jewelry placement on person scenes (fractions of 2000×2000 + relative scale). */
 export type SlotTransform = {
   scale: number;
@@ -268,6 +312,11 @@ export function isBodySlot(slot: string): boolean {
 
 export function isDetailSlot(slot: string): slot is DetailSlot {
   return (DETAIL_SLOTS as readonly string[]).includes(slot);
+}
+
+/** Wear / body / wide_inset call fal.ai. Detail slots do not. */
+export function slotUsesFal(slot: string): boolean {
+  return (COMPOSITE_SLOTS as readonly string[]).includes(slot);
 }
 
 /** Anchor points for a category/frame combo (2 for earrings = left/right ear). */

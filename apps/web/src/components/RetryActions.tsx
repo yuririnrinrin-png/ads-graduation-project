@@ -6,9 +6,10 @@ import { useRouter } from "next/navigation";
 type Props = {
   jobId: string;
   stuck?: boolean;
+  costLimited?: boolean;
 };
 
-export function RetryActions({ jobId, stuck = false }: Props) {
+export function RetryActions({ jobId, stuck = false, costLimited = false }: Props) {
   const router = useRouter();
   const [pending, setPending] = useState<"start" | "failed" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +29,16 @@ export function RetryActions({ jobId, stuck = false }: Props) {
       return;
     }
     router.refresh();
+  }
+
+  if (costLimited) {
+    return (
+      <div style={{ marginTop: "2.5rem" }}>
+        <p className="error" style={{ margin: 0 }}>
+          このジョブの画像生成費が上限の200円に達したため、リトライできません。新しいジョブを作ってください。
+        </p>
+      </div>
+    );
   }
 
   return (

@@ -12,6 +12,7 @@ import {
   getAnchors,
   SLOT_BADGES,
   SLOT_LABELS,
+  slotUsesFal,
   type Category,
   type DetailSlot,
   type SlotKey,
@@ -29,6 +30,8 @@ type Props = {
   insetSlot?: DetailSlot;
   /** Changes after regen so the browser does not keep the old JPEG. */
   imageVersion?: number;
+  /** When false, wear/body regen is blocked (job hit the 200 yen fal cap). */
+  canRegenFal?: boolean;
 };
 
 const MIN_SCALE = 0.4;
@@ -63,6 +66,7 @@ export function SlotCardClient({
   body = false,
   insetSlot,
   imageVersion = 0,
+  canRegenFal = true,
 }: Props) {
   const router = useRouter();
   const anchors = category ? getAnchors(category, body) : getAnchors("bracelet", body);
@@ -226,6 +230,10 @@ export function SlotCardClient({
               >
                 やめる
               </button>
+            </span>
+          ) : slotUsesFal(slot) && !canRegenFal ? (
+            <span className="faint" style={{ fontSize: "0.7rem" }} title="このジョブの画像生成費が上限の200円に達しています">
+              再生成不可（200円）
             </span>
           ) : (
             <button type="button" className="btn-regen" disabled={pending} onClick={() => setConfirming(true)}>

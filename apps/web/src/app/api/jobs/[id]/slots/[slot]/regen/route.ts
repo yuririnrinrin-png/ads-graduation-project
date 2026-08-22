@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 import { enqueueJob } from "@/lib/queue";
 import { busyResponse, isJobBusy } from "@/lib/job-busy";
+import { falBudgetDenied, queueNeedsFal } from "@/lib/job-cost-guard";
 
 type Params = { params: Promise<{ id: string; slot: string }> };
 
@@ -40,6 +41,13 @@ export async function POST(_req: Request, { params }: Params) {
   }
 
   const stage = regenStage(slot);
+  if (queueNeedsFal({ slots: [slot] })) {
+    const denied = falBudgetDenied(job.apiSpendYen);
+    if (denied) {
+      return NextResponse.json({ error: denied }, { status: 400 });
+    }
+  }
+
   await prisma.job.update({
     where: { id },
     data: { status: "queued", stage, error: null },

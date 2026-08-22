@@ -26,6 +26,7 @@ from worker.hair_mask import HAIR_OVERLAY_SLOTS, build_hair_overlay
 from worker.image_io import open_image, save_image
 from worker.retention import PURGE_INTERVAL_SEC, purge_expired
 from worker.scene_gen import generate_all_scenes, slot_pulid_params
+from worker.job_cost import job_cost_yen_limit, track_job_cost
 
 logging.basicConfig(
     level=logging.INFO,
@@ -685,21 +686,18 @@ def run_scenes(
     reuse_ref: bool,
     reuse_existing_scenes: bool = False,
 ) -> dict[str, Image.Image]:
-    def on_api_call() -> None:
-        bump_api_call_count(conn, job_id, 1)
-
     ref = scene_dir / "persona_ref.jpg" if reuse_ref else None
-    scenes = generate_all_scenes(
-        persona_name=job["persona_name"],
-        persona_image_key=job.get("persona_image_key"),
-        category=job["category"],
-        slots=slots,
-        tone_names=job["tone_names"],
-        scene_dir=scene_dir,
-        on_api_call=on_api_call,
-        reuse_reference_path=ref,
-        reuse_existing_scenes=reuse_existing_scenes,
-    )
+    with track_job_cost(conn, job_id):
+        scenes = generate_all_scenes(
+            persona_name=job["persona_name"],
+            persona_image_key=job.get("persona_image_key"),
+            category=job["category"],
+            slots=slots,
+            tone_names=job["tone_names"],
+            scene_dir=scene_dir,
+            reuse_reference_path=ref,
+            reuse_existing_scenes=reuse_existing_scenes,
+        )
     save_scene_slots(conn, job_id, scene_dir, scenes)
     return scenes
 
@@ -898,11 +896,12 @@ def listen_forever() -> None:
     redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379")
     r = Redis.from_url(redis_url, decode_responses=True)
     logger.info(
-        "worker listening on %s key=%s data=%s scene_qa=on hand_id_weight=%s",
+        "worker listening on %s key=%s data=%s scene_qa=on hand_id_weight=%s job_cost_limit=%syen",
         redis_url,
         QUEUE_KEY,
         data_root(),
         slot_pulid_params("wear_office", "bust", "ring")["id_weight"],
+        job_cost_yen_limit(),
     )
 
     last_purge = 0.0

@@ -16,18 +16,55 @@
 
 ## 直近の状態（2026-08-22）
 
-- **フェーズ:** Phase 5 進行中。**14日削除は入った。** Grill でホスト・課金上限・AI表記は決定。実装は次チャット。
-- **fal.ai:** 2026-08-17〜18 にアカウントロック（`TOP_UP` / `Exhausted balance`）。ダッシュボードに残高があっても API が 403 になる既知不具合。**2026-08-21 に解除済み**。サポート窓口はダッシュボード内ではなく **support@fal.ai**（英語）。
+- **フェーズ:** Phase 5。**14日削除・1ジョブ200円停止・学校用 Vercel 公開は入った。**
+- **学校提出 URL:** https://ads-graduation-project-web.vercel.app （ログイン必須。`ec-team` / `studio`）。先生が入れるところまで確認済み。
+- **fal.ai:** 2026-08-17〜18 にアカウントロック（`TOP_UP` / `Exhausted balance`）。ダッシュボードに残高があっても API が 403 になる既知不具合。**2026-08-21 に解除済み**。サポートは **support@fal.ai**（英語）。
 - **再開ジョブ:** `cmsxf1t6y000mfdbk361q6bdo` は **ready**。品質確認ジョブ: `cmt2yl1rd0001fdngeoj80agb`（引き＋インセットは正面の写真で通った）。
 - **品質プロンプトの追加いじり**は、ユーザーが「品質を再開」と言うまでやらない。
-- **ワーカーはホットリロードなし。同時に1プロセスだけ。** Python を直したら再起動。起動ログ: `scene_qa=on hand_id_weight=0.18`。引きカット（`wide_inset`）は PuLID を使わず `flux/dev`。
+- **ワーカーはホットリロードなし。同時に1プロセスだけ。** Python を直したら再起動。起動ログ: `scene_qa=on hand_id_weight=0.18 job_cost_limit=200yen`。引きカット（`wide_inset`）は PuLID を使わず `flux/dev`。
+- **画面は 3000 だけ。** 誤って 3001/3002 が立ったら止める。
 
-### Grill 決定（2026-08-22）— 次チャットで実装
+### Grill 決定（2026-08-22）
 
-- **公開:** Vercel に本物のアプリ（ログイン必須）。Postgres も Vercel 側。学校の URL 公開要件をこれで満たす。
-- **ワーカー:** Vercel に置かない（2〜4分の Python 生成向きではない）。VPS / Railway / Render。提出まではこの PC で生成してよい。会社で毎日使う段階でワーカーを繋ぐ。
-- **課金:** 1ジョブ **200円**（初回＋同じジョブの再生成）。超えたらジョブを止める。円↔ドル換算は実装時。
+- **公開:** Vercel に本物のアプリ（ログイン必須）。Postgres も Vercel 側（Neon）。学校の URL 公開要件はこれで満たした。
+- **ワーカー:** Vercel に置かない。提出まではこの PC。会社で毎日使う段階で VPS / Railway / Render。
+- **課金:** 1ジョブ **200円**（初回＋同じジョブの再生成）。超えたらジョブを止める。実装済み（固定 150円/USD、fal 2MP 切り上げ → Flux 約8円 / PuLID 約10円）。
 - **AI表記:** ツールは書かない（商品ページにもレビューにも出さない）。
+
+### 置き場所（提出まで / 毎日使うとき）
+
+| | 提出まで（今） | 会社で毎日使うとき |
+|---|---|---|
+| 画面 | この PC の :3000。Vercel はログイン＋一覧用 | Vercel |
+| Postgres | ローカル Docker。公開面は Neon（Vercel Storage） | 同じ Neon でよい |
+| Redis | この PC の Docker | Upstash 等（画面とワーカーの両方から届く場所） |
+| 画像 | この PC の `apps/web/.data` | S3 互換（R2 等） |
+| ワーカー | この PC（venv・1プロセス） | VPS / Railway / Render |
+
+### Vercel / Neon（公開面）
+
+- Vercel プロジェクト名: **`ads-graduation-project-web`**
+- GitHub: `yuririnrinrin-png/ads-graduation-project`、Root Directory: **`apps/web`**
+- 公開 URL: https://ads-graduation-project-web.vercel.app
+- 死活: https://ads-graduation-project-web.vercel.app/api/health
+- Postgres: Neon 連携 **`neon-champagne-magnet`**。地域は Tokyo が無かったので **Washington, D.C. (East)**。**Neon Auth は OFF**。Free プラン。
+- 本番の環境変数（Settings → Environments → Production）:
+  - Neon が入れた `DATABASE_URL` / `DATABASE_URL_UNPOOLED`（Sensitive。Vercel 上では後から値を開けない）
+  - 手で入れた `NEXTAUTH_URL`（`https://ads-graduation-project-web.vercel.app`）/ `NEXTAUTH_SECRET` / `AUTH_USER` / `AUTH_PASSWORD`
+- クラウド DB へは、この PC から `$env:DATABASE_URL=...; npm run db:push` → `npm run db:seed` 済み（表＋プリセット 人物3 / 背景4 / トーン4）。
+- `main` へ push すると Vercel が自動で Redeploy する。
+- **公開 URL ではジョブ新規生成はできない**（Redis と画像がこの PC のため。`REDIS_URL` 未設定時は日本語で拒否）。生成デモは localhost:3000。
+- Neon の接続文字列がチャット／ターミナルに出た。提出が済んだら Neon でパスワードを作り直すとよい。**接続文字列はコミットしない・メールに貼らない。**
+- 別プロジェクト `tk-jewelry-workspace` は別作品。触らない。
+- `vercel env pull` はローカルの Docker 用 `.env` を上書きするので使わない。
+
+### 1ジョブ200円（実装の要点）
+
+- 正: `packages/shared/src/index.ts` の定数と `apps/worker/worker/job_cost.py` を同じにする。
+- ワーカーが fal を呼ぶ**前**に残額を見て、超えるなら `JobCostLimitError`（日本語）。成功後に `Job.apiSpendYen` と `apiCallCount` を加算。
+- 同じジョブの枠再生成も累計。ディテール再生成は fal を使わないので上限後も可。
+- 旧ジョブで `apiSpendYen=0` かつ `apiCallCount>0` なら、PuLID 単価で概算して埋める。
+- 画面: レビューに `約◯/200円`。上限後は着用・全身の再生成とリトライを止める。
 
 ### 製品の約束（変えない）
 
@@ -53,7 +90,9 @@
 - 失敗: 最初から／失敗した段階からリトライ。12分以上止まっているときは強制リトライも出る。
 - **進捗画面:** 5段階（切り抜き→ディテール→人物シーン→合成→仕上げ）、目安と経過、画面を閉じても続く旨。途中画像の先出しなし。
 - **14日削除:** ワーカーが約10分おきに期限切れジョブのファイルを消す。一覧・ジョブ画面を開いたときも消す。状態は `expired`。ZIP / 再生成は不可。
-- **死活確認:** http://localhost:3000/api/health
+- **1ジョブ200円:** 人物生成（fal）の累計。同じジョブの枠再生成も含む。超えたらそのジョブを停止（日本語）。ディテール再生成は課金なしなので可。
+- **学校公開:** https://ads-graduation-project-web.vercel.app （ログイン可。生成は不可）
+- **死活確認:** http://localhost:3000/api/health ／ 公開面は `/api/health`
 - **プリセット管理** `/presets`: 人物・背景・トーンの追加／改名／削除。
 - 画面とワーカーは **別ターミナル**。同じだと `localhost:3000` が拒否される。
 
@@ -142,10 +181,10 @@
 
 開始フレーズ: 「`docs/HANDOFF.md` を読んで続けてください」
 
-1. Docker + `npm run dev`（**3000 だけ**）+ ワーカー1つ（venv、ログ `scene_qa=on`）。
-2. **1ジョブ200円で停止**を実装する（再生成込み。超えたらそのジョブを止める。日本語メッセージ）。
-3. **Vercel 公開面**（ログイン＋ジョブ一覧＋Postgres）。ワーカーはこの PC のままでも可。画像ディスクと Redis の置き場所を決めてから。
-4. 人物シーンのプロンプト／QA は、ユーザーが「品質を再開」と言うまで触らない。
+1. Docker + `npm run dev`（**3000 だけ**）+ ワーカー1つ（venv、ログ `scene_qa=on job_cost_limit=200yen`）。Python を直したら再起動。
+2. 人物シーンのプロンプト／QA は、ユーザーが「品質を再開」と言うまで触らない。
+3. 会社で毎日使う段階になるまで、ワーカーのクラウド接続（Upstash + 画像の S3/R2）はやらない。
+4. `main` push 後に Vercel が自動ビルドする。失敗していたら Deployments のログを見る。
 
 ---
 
@@ -161,6 +200,9 @@
 
 主なファイル:
 
+- `apps/worker/worker/job_cost.py` — 1ジョブ200円。fal の前に止める
+- `apps/web/src/lib/job-cost-guard.ts` — 再生成／リトライの API 側ガード
+- `apps/web/vercel.json` — Root Directory `apps/web` 用の install
 - `apps/worker/worker/scene_gen.py` — プロンプト、PuLID/Flux、課金中断、保存
 - `apps/worker/worker/scene_qa.py` — 生成後の顔／胴体チェック
 - `apps/worker/worker/image_io.py` — Windows 安全な読み書き
@@ -192,7 +234,7 @@ python -m worker.pipeline
 
 ## 未着手 / やらない
 
-- Phase 5 残り: 1ジョブ200円停止、Vercel 公開面、ワーカーのクラウド接続、円ドル換算
+- Phase 5 残り: ワーカーのクラウド接続（毎日使う段階）。Neon パスワードの作り直し（接続文字列がチャットに出た）
 - 手・手首の自動検出、ブレスレットの3D巻きつけ、AI にジュエリーを描かせること（方針外）
 - Shopify への自動アップロード（v1 対象外）
 - 商品ページ／レビューへの「AI使用」自動表記（Grill でやらないと決定）
