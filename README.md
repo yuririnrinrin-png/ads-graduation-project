@@ -51,8 +51,10 @@
 
 ## ドキュメント
 
-- **公開モック:** https://ti-amo-jewelry-studio.surge.sh
-- **ローカルモック:** [docs/mockups/product-ui.html](docs/mockups/product-ui.html)
+- **公開モック（現行UI）:** https://ti-amo-jewelry-studio-v2.surge.sh
+- **公開モック（Phase 0・旧）:** https://ti-amo-jewelry-studio.surge.sh
+- **ローカルモック（現行）:** [docs/mockups-v2/index.html](docs/mockups-v2/index.html)
+- **ローカルモック（Phase 0）:** [docs/mockups/product-ui.html](docs/mockups/product-ui.html)
 - **要件:** [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md)
 - **設計:** [docs/DESIGN.md](docs/DESIGN.md)
 - **レビュー記録:** [docs/REVIEW.md](docs/REVIEW.md)

@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ti amo Jewelry Studio — 現行UIモック</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: { DEFAULT: '#1A1612', soft: '#2C2520', muted: '#5C534A', faint: '#8A8076' },
+            gold: { DEFAULT: '#B8956C', bright: '#D4B896', deep: '#8F6F45', mist: '#E8DCC8' },
+            stone: { DEFAULT: '#E6E1D8', light: '#F3F0EA', mid: '#D2CBC0', dark: '#A39A8E' },
+            danger: { DEFAULT: '#8F3F32', soft: '#C97B6B' },
+          },
+          fontFamily: {
+            display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+            sans: ['Outfit', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            frame: '0 24px 60px -20px rgba(26, 22, 18, 0.35)',
+            lift: '0 8px 24px -8px rgba(26, 22, 18, 0.18)',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse-bar { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+    .anim-rise { animation: rise 0.7s ease-out both; }
+    .progress-glow { animation: pulse-bar 2s ease-in-out infinite; }
+    .marble-a {
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.55), transparent 50%),
+        linear-gradient(145deg, #E8E4DC 0%, #D5CFC4 40%, #C8C0B4 70%, #E2DDD4 100%);
+    }
+    .marble-b {
+      background:
+        radial-gradient(ellipse at 70% 60%, rgba(255,255,255,0.4), transparent 45%),
+        linear-gradient(160deg, #D9D0C3 0%, #C4B8A8 45%, #B5A794 100%);
+    }
+    .marble-c {
+      background:
+        radial-gradient(circle at 40% 40%, rgba(255,255,255,0.35), transparent 55%),
+        linear-gradient(180deg, #2A2622 0%, #3D3732 50%, #1F1B18 100%);
+    }
+    .linen {
+      background:
+        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(140,120,90,0.04) 2px, rgba(140,120,90,0.04) 3px),
+        linear-gradient(180deg, #EDE6D9, #E0D6C6);
+    }
+  </style>
+</head>
+<body class="bg-stone-light text-ink font-sans antialiased">
+  <div class="pointer-events-none fixed inset-0 -z-10">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#F7F3EC_0%,_#E6E1D8_55%,_#D8D1C6_100%)]"></div>
+    <div class="absolute -top-24 right-0 h-96 w-96 rounded-full bg-gold-mist/40 blur-3xl"></div>
+    <div class="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-stone-mid/50 blur-3xl"></div>
+  </div>
+
+  <header class="mx-auto max-w-6xl px-5 pt-12 pb-8 md:pt-16 anim-rise">
+    <p class="text-xs font-medium tracking-[0.25em] uppercase text-gold-deep">Phase 5 · Current UI Mock</p>
+    <h1 class="mt-3 font-display text-4xl font-semibold leading-[0.95] tracking-tight text-ink md:text-5xl">
+      Ti amo<br>Jewelry<br>Studio
+    </h1>
+    <p class="mt-4 max-w-2xl text-base leading-relaxed text-ink-muted md:text-lg">
+      本実装（localhost:3000）と同じ画面と操作を並べた完成形イメージです。見た目だけのモックで、ボタンは動きません。
+    </p>
+    <p class="mt-3 max-w-2xl text-sm text-ink-faint">
+      旧モック（Phase 0）は
+      <a class="text-gold-deep underline decoration-gold/40 underline-offset-2" href="https://ti-amo-jewelry-studio.surge.sh/">ti-amo-jewelry-studio.surge.sh</a>
+      に残しています。
+    </p>
+    <nav class="mt-8 flex flex-wrap gap-2 text-sm">
+      <a href="#login" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">01 ログイン</a>
+      <a href="#jobs" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">02 ジョブ一覧</a>
+      <a href="#new-job" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">03 新規ジョブ</a>
+      <a href="#progress" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">04 進捗</a>
+      <a href="#progress-fail" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">04b 失敗</a>
+      <a href="#progress-stuck" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">04c 停止</a>
+      <a href="#review" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">05 レビュー</a>
+      <a href="#adjust" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">05b 位置調整</a>
+      <a href="#expired" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">06 期限切れ</a>
+      <a href="#presets" class="rounded-full border border-ink/10 bg-white/70 px-3.5 py-1.5 text-ink-soft hover:border-gold/50 hover:text-gold-deep">07 プリセット</a>
+    </nav>
+  </header>
+
+  <main class="mx-auto max-w-6xl space-y-20 px-5 pb-24">
+
+    <!-- ========== 01 LOGIN ========== -->
+    <section id="login" class="anim-rise scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 01</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">ログイン</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">共有の社内アカウントで入る。ブランド名が最初の画面の主役。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-ink shadow-frame">
+        <div class="flex items-center gap-2 border-b border-white/10 bg-ink-soft px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white/5 px-3 py-1 text-center text-xs tracking-wide text-white/40">localhost:3000 / login</div>
+        </div>
+        <div class="relative grid min-h-[520px] md:grid-cols-2">
+          <div class="relative flex flex-col justify-between overflow-hidden p-8 md:p-12">
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,_rgba(184,149,108,0.25),_transparent_55%),linear-gradient(160deg,#1A1612_0%,#2C2520_100%)]"></div>
+            <div class="relative">
+              <p class="font-display text-5xl font-semibold leading-[0.95] text-gold-bright md:text-6xl">Ti amo<br>Jewelry<br>Studio</p>
+              <p class="mt-6 max-w-xs text-sm leading-relaxed text-white/55">イタリアンゴールドジュエリーの商品ページ用写真を、型どおり10枚そろえる。</p>
+            </div>
+            <p class="relative text-[11px] tracking-[0.2em] uppercase text-white/30">Internal · EC Ops</p>
+          </div>
+          <div class="relative flex items-center bg-stone-light p-8 md:p-12">
+            <div class="w-full max-w-sm">
+              <p class="text-xs tracking-[0.18em] uppercase text-ink-faint">Sign in</p>
+              <h3 class="mt-2 font-display text-3xl font-semibold text-ink">社内ログイン</h3>
+              <div class="mt-8 space-y-4">
+                <div>
+                  <label class="text-xs text-ink-muted">ID</label>
+                  <div class="mt-1.5 rounded-lg border border-ink/10 bg-white px-3 py-2.5 text-sm text-ink-soft">ec-team</div>
+                </div>
+                <div>
+                  <label class="text-xs text-ink-muted">パスワード</label>
+                  <div class="mt-1.5 rounded-lg border border-ink/10 bg-white px-3 py-2.5 text-sm tracking-widest text-ink-faint">••••••••</div>
+                </div>
+                <div class="flex w-full items-center justify-center rounded-lg bg-ink px-4 py-3 text-sm font-medium text-gold-mist">入る</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 02 JOB LIST ========== -->
+    <section id="jobs" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 02</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">ジョブ一覧</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">ログイン直後の画面。状態・保管期限・削除。生成中もここから戻れる。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 /</div>
+        </div>
+
+        <div class="flex items-center justify-between border-b border-ink/8 px-6 py-4">
+          <span class="font-display text-xl font-semibold text-ink">Ti amo Jewelry Studio</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-gold-deep">ジョブ</span>
+            <span class="text-gold-deep">プリセット</span>
+            <span class="text-ink-faint">ec-team</span>
+            <span class="text-gold-deep">出る</span>
+          </div>
+        </div>
+
+        <div class="px-6 pb-8 pt-6 md:px-8">
+          <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-gold-deep">Jobs</p>
+              <h3 class="mt-1 font-display text-2xl font-semibold text-ink">ジョブ</h3>
+              <p class="mt-1 text-sm text-ink-muted">3枚を上げる → 待つ → 直す → ZIP。生成結果は14日で削除されます。</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm text-gold-deep">プリセット</span>
+              <span class="rounded-lg bg-gold-deep px-5 py-2.5 text-sm font-medium text-white shadow-lift">新規ジョブ</span>
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-ink/10">
+            <div class="flex items-center justify-between border-b border-ink/8 px-5 py-3">
+              <p class="font-display text-lg font-semibold text-ink">すべてのジョブ</p>
+              <span class="text-xs text-ink-faint">5 件 · 新しい順</span>
+            </div>
+            <div class="overflow-x-auto px-5">
+              <table class="w-full min-w-[40rem] text-left text-sm">
+                <thead>
+                  <tr class="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+                    <th class="py-3 pr-3">ジョブ</th>
+                    <th class="py-3 pr-3">状態</th>
+                    <th class="py-3 pr-3">カテゴリ</th>
+                    <th class="py-3 pr-3">人物</th>
+                    <th class="py-3 pr-3">作成</th>
+                    <th class="py-3 pr-3">保管</th>
+                    <th class="py-3"></th>
+                  </tr>
+                </thead>
+                <tbody class="text-ink-soft">
+                  <tr class="border-t border-ink/8">
+                    <td class="py-3 pr-3"><span class="text-gold-deep">js-2104…</span></td>
+                    <td class="py-3 pr-3"><span class="rounded-full bg-[#7A9E7E]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#3D5C40]">完了</span></td>
+                    <td class="py-3 pr-3">ブレスレット</td>
+                    <td class="py-3 pr-3">Sofia</td>
+                    <td class="py-3 pr-3 text-ink-faint">2026/08/22 14:02</td>
+                    <td class="py-3 pr-3 text-ink-faint">残り12日</td>
+                    <td class="py-3 text-right"><span class="rounded-md border border-danger-soft/40 px-2 py-1 text-[11px] text-danger">削除</span></td>
+                  </tr>
+                  <tr class="border-t border-ink/8">
+                    <td class="py-3 pr-3"><span class="text-gold-deep">js-2103…</span></td>
+                    <td class="py-3 pr-3"><span class="rounded-full bg-gold/20 px-2.5 py-0.5 text-[11px] font-medium text-gold-deep">生成中</span></td>
+                    <td class="py-3 pr-3">ネックレス</td>
+                    <td class="py-3 pr-3">Elena</td>
+                    <td class="py-3 pr-3 text-ink-faint">2026/08/22 13:48</td>
+                    <td class="py-3 pr-3 text-ink-faint">残り14日</td>
+                    <td class="py-3 text-right"><span class="rounded-md border border-danger-soft/40 px-2 py-1 text-[11px] text-danger">削除</span></td>
+                  </tr>
+                  <tr class="border-t border-ink/8">
+                    <td class="py-3 pr-3"><span class="text-gold-deep">js-2101…</span></td>
+                    <td class="py-3 pr-3"><span class="rounded-full bg-danger-soft/20 px-2.5 py-0.5 text-[11px] font-medium text-danger">失敗</span></td>
+                    <td class="py-3 pr-3">ピアス</td>
+                    <td class="py-3 pr-3">Mia</td>
+                    <td class="py-3 pr-3 text-ink-faint">2026/08/21 19:10</td>
+                    <td class="py-3 pr-3 text-danger">残り2日</td>
+                    <td class="py-3 text-right"><span class="rounded-md border border-danger-soft/40 px-2 py-1 text-[11px] text-danger">削除</span></td>
+                  </tr>
+                  <tr class="border-t border-ink/8">
+                    <td class="py-3 pr-3"><span class="text-gold-deep">js-2048…</span></td>
+                    <td class="py-3 pr-3"><span class="rounded-full bg-[#7A9E7E]/20 px-2.5 py-0.5 text-[11px] font-medium text-[#3D5C40]">完了</span></td>
+                    <td class="py-3 pr-3">リング</td>
+                    <td class="py-3 pr-3">Sofia</td>
+                    <td class="py-3 pr-3 text-ink-faint">2026/08/10 11:22</td>
+                    <td class="py-3 pr-3 text-ink-faint">残り2日</td>
+                    <td class="py-3 text-right"><span class="rounded-md border border-danger-soft/40 px-2 py-1 text-[11px] text-danger">削除</span></td>
+                  </tr>
+                  <tr class="border-t border-ink/8">
+                    <td class="py-3 pr-3"><span class="text-gold-deep">js-1980…</span></td>
+                    <td class="py-3 pr-3"><span class="rounded-full bg-ink-faint/20 px-2.5 py-0.5 text-[11px] font-medium text-ink-muted">期限切れ</span></td>
+                    <td class="py-3 pr-3">ネックレス</td>
+                    <td class="py-3 pr-3">Elena</td>
+                    <td class="py-3 pr-3 text-ink-faint">2026/08/01 09:04</td>
+                    <td class="py-3 pr-3 text-ink-muted">期限切れ（画像は削除済み）</td>
+                    <td class="py-3 text-right"><span class="rounded-md border border-danger-soft/40 px-2 py-1 text-[11px] text-danger">削除</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 03 NEW JOB ========== -->
+    <section id="new-job" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 03</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">新規ジョブ</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">3枚UP・必須が揃うまで生成不可。インセット元は任意。結果は14日で消える旨を出す。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / jobs / new</div>
+        </div>
+
+        <div class="flex items-center justify-between border-b border-ink/8 px-6 py-4">
+          <span class="font-display text-xl font-semibold text-ink">Ti amo Jewelry Studio</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-gold-deep">ジョブ</span>
+            <span class="text-gold-deep">プリセット</span>
+            <span class="text-ink-faint">ec-team</span>
+            <span class="text-gold-deep">出る</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-end justify-between gap-3 px-6 pt-6 md:px-8">
+          <div>
+            <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-gold-deep">New job</p>
+            <h3 class="mt-1 font-display text-2xl font-semibold text-ink">新規ジョブ</h3>
+          </div>
+          <span class="rounded-full bg-gold-mist/60 px-2.5 py-0.5 text-[10px] tracking-wide text-gold-deep">NEW JOB</span>
+        </div>
+
+        <div class="grid gap-8 p-6 md:grid-cols-12 md:p-8">
+          <div class="space-y-4 md:col-span-5">
+            <h3 class="font-display text-xl font-semibold text-ink">商品写真 3枚</h3>
+            <p class="text-xs text-ink-muted">同一商品・白〜淡色背景・角度違い。順序がディテール1〜3。サムネを選ぶとメイン切替。JPEG / PNG / WebP・各12MBまで。</p>
+            <p class="text-xs text-ink-muted">着用に使うメイン写真は、手首に付けたときと同じ向き（少し楕円に見える角度）が合いやすいです。真上の円だと貼り付けが目立ちます。</p>
+            <div class="grid grid-cols-3 gap-3">
+              <div class="space-y-1.5">
+                <div class="relative aspect-square overflow-hidden rounded-xl border-2 border-gold bg-white shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/product-01.png" alt="商品写真1（メイン）" class="h-full w-full object-cover">
+                  <span class="absolute left-2 top-2 rounded bg-ink/80 px-1.5 py-0.5 text-xs text-gold-mist">1 · MAIN</span>
+                </div>
+                <div class="flex gap-1">
+                  <span class="flex-1 rounded-md border border-ink/10 py-1 text-center text-[11px] text-ink-muted">差し替え</span>
+                  <span class="rounded-md border border-danger-soft/40 px-2 py-1 text-[11px] text-danger">消去</span>
+                </div>
+              </div>
+              <div class="space-y-1.5">
+                <div class="relative aspect-square overflow-hidden rounded-xl border border-ink/10 bg-white">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/product-02.png" alt="商品写真2" class="h-full w-full object-cover">
+                  <span class="absolute left-2 top-2 rounded bg-white/90 px-1.5 py-0.5 text-xs text-ink-muted">2</span>
+                  <span class="absolute inset-x-2 bottom-2 rounded bg-ink/70 px-1.5 py-1 text-center text-[11px] text-white">メインにする</span>
+                </div>
+                <div class="flex gap-1">
+                  <span class="flex-1 rounded-md border border-ink/10 py-1 text-center text-[11px] text-ink-muted">差し替え</span>
+                  <span class="rounded-md border border-danger-soft/40 px-2 py-1 text-[11px] text-danger">消去</span>
+                </div>
+              </div>
+              <div class="space-y-1.5">
+                <div class="relative flex aspect-square flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-ink/15 bg-stone-light">
+                  <span class="text-xl text-gold">◇</span>
+                  <span class="mt-1 text-[11px] text-ink-faint">未選択</span>
+                </div>
+                <span class="block rounded-md border border-ink/10 py-1 text-center text-[11px] text-ink-muted">ファイルを選ぶ</span>
+              </div>
+            </div>
+            <p class="text-xs text-ink-muted">メイン写真: <span class="font-medium text-ink">1枚目</span> を着用合成に使用</p>
+          </div>
+
+          <div class="space-y-6 md:col-span-7">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p class="text-xs font-medium text-ink-muted">カテゴリ</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <span class="rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink-muted">ネックレス</span>
+                  <span class="rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink-muted">ピアス</span>
+                  <span class="rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink-muted">リング</span>
+                  <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">ブレスレット</span>
+                </div>
+                <p class="mt-2 text-xs text-gold-deep">着用4枚は手首をカメラ正面に向けます。腕は組みません。顔は上側に残します</p>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-ink-muted">地金カラー</p>
+                <div class="mt-2 flex gap-2">
+                  <span class="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist"><span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span> YG</span>
+                  <span class="flex items-center gap-1.5 rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink-muted"><span class="h-2.5 w-2.5 rounded-full bg-[#C8C8C8]"></span> WG</span>
+                  <span class="flex items-center gap-1.5 rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink-muted"><span class="h-2.5 w-2.5 rounded-full bg-[#E0B8B0]"></span> PG</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs text-ink-muted">人物プリセット（1人選ぶ · このジョブ内で固定）</p>
+              <div class="mt-2 grid grid-cols-3 gap-3">
+                <div class="overflow-hidden rounded-xl border-2 border-gold shadow-lift">
+                  <div class="relative aspect-[3/4] overflow-hidden bg-[#8C847C]">
+                    <img src="https://ti-amo-jewelry-studio.surge.sh/assets/persona-01.png" alt="Sofia" class="absolute inset-0 h-full w-full object-cover object-[center_28%]">
+                    <span class="absolute bottom-2 left-2 rounded bg-ink/70 px-1.5 py-0.5 text-xs text-white">Sofia</span>
+                  </div>
+                </div>
+                <div class="overflow-hidden rounded-xl border border-ink/10 opacity-80">
+                  <div class="relative aspect-[3/4] overflow-hidden bg-[#8A8A8A]">
+                    <img src="https://ti-amo-jewelry-studio.surge.sh/assets/persona-02.png" alt="Elena" class="absolute inset-0 h-full w-full object-cover object-[center_20%]">
+                    <span class="absolute bottom-2 left-2 rounded bg-ink/70 px-1.5 py-0.5 text-xs text-white">Elena</span>
+                  </div>
+                </div>
+                <div class="overflow-hidden rounded-xl border border-ink/10 opacity-80">
+                  <div class="relative aspect-[3/4] overflow-hidden bg-[#C8C8C8]">
+                    <img src="https://ti-amo-jewelry-studio.surge.sh/assets/persona-03.png" alt="Mia" class="absolute inset-0 h-full w-full object-cover object-[center_12%]">
+                    <span class="absolute bottom-2 left-2 rounded bg-ink/70 px-1.5 py-0.5 text-xs text-white">Mia</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs text-ink-muted">ディテール背景（3枚で統一）</p>
+              <div class="mt-2 grid grid-cols-4 gap-2">
+                <div class="aspect-square overflow-hidden rounded-lg border-2 border-gold">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/detail-bg.png?v=2" alt="白大理石" class="h-full w-full object-cover">
+                </div>
+                <div class="aspect-square rounded-lg border border-ink/10 marble-b opacity-80"></div>
+                <div class="aspect-square rounded-lg border border-ink/10 linen opacity-80"></div>
+                <div class="aspect-square rounded-lg border border-ink/10 marble-c opacity-80"></div>
+              </div>
+              <p class="mt-1.5 text-xs text-ink-muted">白大理石 · トラバーチン · リネン · 黒石</p>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-xs font-medium text-ink-muted">全身トーン（ちょうど2つ）</p>
+                <p class="text-xs font-medium text-gold-deep">2/2 選択中</p>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">オフィス</span>
+                <span class="rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink-faint opacity-50">休日</span>
+                <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">エレガント</span>
+                <span class="rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink-faint opacity-50">リラックス</span>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-medium text-ink-muted">インセットに使うディテール（任意・あとから変更可）</p>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">ディテール A</span>
+                <span class="rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink-muted">ディテール B</span>
+                <span class="rounded-full border border-ink/10 px-3 py-1.5 text-xs text-ink-muted">ディテール C</span>
+              </div>
+            </div>
+
+            <div class="space-y-3 border-t border-ink/8 pt-4">
+              <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-xs text-ink-muted">必須が揃っています → 生成可能。結果は14日で削除されます。</p>
+                <div class="rounded-lg bg-gold-deep px-6 py-3 text-center text-sm font-medium text-white shadow-lift">10枚を生成する</div>
+              </div>
+              <div class="flex flex-col items-stretch gap-2 rounded-lg bg-stone-light px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-xs text-ink-soft">不足: 商品写真3枚</p>
+                <div class="cursor-not-allowed rounded-lg bg-stone-mid/80 px-6 py-3 text-center text-sm font-medium text-ink-faint">10枚を生成する</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 04 PROGRESS ========== -->
+    <section id="progress" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 04</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">進捗</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">5段階・経過時間・「画面を閉じても続く」。途中画像は出さない。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / jobs / js-2103</div>
+        </div>
+        <div class="flex items-center justify-between border-b border-ink/8 px-6 py-4">
+          <span class="font-display text-xl font-semibold text-ink">Ti amo Jewelry Studio</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-gold-deep">ジョブ</span>
+            <span class="text-gold-deep">プリセット</span>
+            <span class="text-ink-faint">ec-team</span>
+            <span class="text-gold-deep">出る</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-end justify-between gap-3 px-6 pt-6">
+          <div>
+            <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-gold-deep">Job · 生成中</p>
+            <h3 class="mt-1 font-display text-2xl font-semibold text-ink">進捗</h3>
+          </div>
+          <div class="flex gap-2">
+            <span class="rounded-md border border-danger-soft/40 px-3 py-2 text-xs text-danger">削除</span>
+            <span class="rounded-lg border border-ink/15 px-4 py-2 text-xs text-ink-soft">一覧へ</span>
+          </div>
+        </div>
+        <div class="flex flex-col items-center px-6 py-14 md:py-16">
+          <p class="font-display text-3xl font-semibold text-ink md:text-4xl">生成しています</p>
+          <p class="mt-2 text-sm text-ink-muted">ブレスレット · YG · Sofia · 白大理石</p>
+          <div class="mt-12 w-full max-w-xl">
+            <div class="h-1.5 overflow-hidden rounded-full bg-stone">
+              <div class="progress-glow h-full w-[49%] rounded-full bg-gradient-to-r from-gold-deep to-gold-bright"></div>
+            </div>
+            <p class="mt-3 flex flex-wrap justify-center gap-x-4 text-center text-sm text-ink-muted">
+              <span>およそあと 1〜3分 · 人物シーンがいちばん時間がかかります</span>
+              <span class="text-ink-faint">経過 1分42秒</span>
+            </p>
+            <p class="mt-2 text-center text-sm text-ink-muted">この画面を閉じても生成は続きます。一覧からいつでも戻れます。 人物生成 約40/200円。</p>
+          </div>
+          <ol class="mt-12 w-full max-w-md space-y-3 text-left">
+            <li class="flex items-start gap-3 text-sm text-ink-muted">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] text-gold-mist">✓</span>
+              切り抜き
+            </li>
+            <li class="flex items-start gap-3 text-sm text-ink-muted">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] text-gold-mist">✓</span>
+              ディテール
+            </li>
+            <li class="flex items-start gap-3 text-sm font-medium text-ink">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-gold text-[10px] text-gold-deep">3</span>
+              <span>
+                人物シーン · いまここ
+                <span class="mt-0.5 block text-xs font-normal text-ink-muted">着用7枚を作っています。いちばん時間がかかります</span>
+              </span>
+            </li>
+            <li class="flex items-start gap-3 text-sm text-ink-faint">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink/15 text-[10px]">4</span>
+              合成
+            </li>
+            <li class="flex items-start gap-3 text-sm text-ink-faint">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink/15 text-[10px]">5</span>
+              仕上げ
+            </li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 04b FAIL ========== -->
+    <section id="progress-fail" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 04b</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">進捗 · 失敗</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">段階名つき。最初から／失敗した段階から。上限到達時はリトライ不可。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / jobs / js-2101 · failed</div>
+        </div>
+        <div class="flex items-center justify-between border-b border-ink/8 px-6 py-4">
+          <span class="font-display text-xl font-semibold text-ink">Ti amo Jewelry Studio</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-gold-deep">ジョブ</span>
+            <span class="text-gold-deep">プリセット</span>
+            <span class="text-ink-faint">ec-team</span>
+            <span class="text-gold-deep">出る</span>
+          </div>
+        </div>
+        <div class="flex flex-col items-center px-6 py-14 md:py-16">
+          <p class="rounded-full bg-danger-soft/15 px-3 py-1 text-xs font-medium tracking-wide text-danger">FAILED</p>
+          <p class="mt-4 font-display text-3xl font-semibold text-ink md:text-4xl">人物シーンで失敗しました</p>
+          <p class="mt-2 max-w-md text-center text-sm text-ink-muted">段階「人物シーン」でエラー。切り抜きとディテールは残っています。</p>
+          <p class="mt-2 text-xs text-ink-faint">人物生成 約80/200円</p>
+          <ol class="mt-10 w-full max-w-md space-y-3">
+            <li class="flex items-center gap-3 text-sm text-ink-muted">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-gold-mist">✓</span>切り抜き
+            </li>
+            <li class="flex items-center gap-3 text-sm text-ink-muted">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-xs text-gold-mist">✓</span>ディテール
+            </li>
+            <li class="flex items-center gap-3 text-sm font-medium text-danger">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full bg-danger-soft text-xs text-white">!</span>人物シーン — 失敗
+            </li>
+            <li class="flex items-center gap-3 text-sm text-ink-faint">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full border border-ink/15 text-xs">4</span>合成
+            </li>
+            <li class="flex items-center gap-3 text-sm text-ink-faint">
+              <span class="flex h-6 w-6 items-center justify-center rounded-full border border-ink/15 text-xs">5</span>仕上げ
+            </li>
+          </ol>
+          <div class="mt-10 flex flex-wrap justify-center gap-3">
+            <span class="rounded-lg border border-ink/15 bg-white px-5 py-3 text-sm font-medium text-ink-soft">最初からリトライ</span>
+            <span class="rounded-lg bg-ink px-5 py-3 text-sm font-medium text-gold-mist shadow-lift">失敗した段階からリトライ</span>
+          </div>
+          <p class="mt-3 text-xs text-ink-faint">同じ写真・設定のままやり直します。ワーカーが起動している必要があります。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 04c STUCK ========== -->
+    <section id="progress-stuck" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 04c</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">進捗 · 停止</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">12分以上更新が無いときだけ「止まっているのでやり直す」を出す。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / jobs / js-2103 · stuck</div>
+        </div>
+        <div class="flex flex-col items-center px-6 py-14 md:py-16">
+          <p class="font-display text-3xl font-semibold text-ink md:text-4xl">生成しています</p>
+          <p class="mt-2 text-sm text-ink-muted">ネックレス · YG · Elena · 白大理石</p>
+          <div class="mt-10 w-full max-w-xl">
+            <div class="h-1.5 overflow-hidden rounded-full bg-stone">
+              <div class="h-full w-[49%] rounded-full bg-gradient-to-r from-gold-deep to-gold-bright"></div>
+            </div>
+            <p class="mt-3 text-center text-sm text-ink-muted">およそあと 1〜3分 · 人物シーンがいちばん時間がかかります <span class="text-ink-faint">経過 12分08秒</span></p>
+            <p class="mt-2 text-center text-sm text-ink-muted">この画面を閉じても生成は続きます。一覧からいつでも戻れます。</p>
+          </div>
+          <div class="mt-10 flex flex-wrap justify-center gap-3">
+            <span class="rounded-lg border border-ink/15 bg-white px-5 py-3 text-sm font-medium text-ink-soft">最初からリトライ</span>
+            <span class="rounded-lg bg-ink px-5 py-3 text-sm font-medium text-gold-mist shadow-lift">今の段階からやり直す</span>
+          </div>
+          <p class="mt-3 max-w-md text-center text-xs text-ink-faint">画面が止まったときは、ワーカーを起動し直してからここを押してください。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 05 REVIEW ========== -->
+    <section id="review" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 05</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">レビュー</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">10枠・ダメな枠だけ再生成。保管残り日数と 約◯/200円。ZIP。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / jobs / js-2104 / review</div>
+        </div>
+        <div class="flex items-center justify-between border-b border-ink/8 px-6 py-4">
+          <span class="font-display text-xl font-semibold text-ink">Ti amo Jewelry Studio</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-gold-deep">ジョブ</span>
+            <span class="text-gold-deep">プリセット</span>
+            <span class="text-ink-faint">ec-team</span>
+            <span class="text-gold-deep">出る</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-end justify-between gap-3 px-6 pt-6">
+          <div>
+            <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-gold-deep">Job · 完了</p>
+            <h3 class="mt-1 font-display text-2xl font-semibold text-ink">レビュー</h3>
+          </div>
+          <div class="flex gap-2">
+            <span class="rounded-md border border-danger-soft/40 px-3 py-2 text-xs text-danger">削除</span>
+            <span class="rounded-lg border border-ink/15 px-4 py-2 text-xs text-ink-soft">一覧へ</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-ink/8 px-6 py-4">
+          <div>
+            <p class="font-display text-xl font-semibold text-ink">10枚の確認</p>
+            <p class="text-xs text-ink-faint">ジョブ js-2104 · 同一人物 Sofia · 2000×2000 · 残り12日 · 人物生成 約72/200円</p>
+          </div>
+          <span class="rounded-lg bg-ink px-4 py-2 text-xs font-medium text-gold-mist shadow-lift">ZIPをダウンロード</span>
+        </div>
+
+        <div class="space-y-8 p-6 md:p-8">
+          <p class="text-sm text-ink-muted">ブレスレット · YG · Sofia · 白大理石 <span class="text-ink-faint">· ダメな枠は再生成。着用系はドラッグで大きさ・位置、スライダーで回転</span></p>
+
+          <div>
+            <h3 class="mb-3 text-xs font-medium tracking-[0.18em] uppercase text-ink-muted">Detail · AI人物なし · 01–03</h3>
+            <div class="grid grid-cols-3 gap-3 md:gap-4">
+              <div class="relative">
+                <div class="relative aspect-square overflow-hidden rounded-xl shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/detail-bg.png?v=2" alt="" class="absolute inset-0 h-full w-full object-cover">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/product-01.png" alt="ディテールA" class="relative z-[1] h-full w-full object-contain mix-blend-multiply">
+                  <span class="absolute left-2 top-2 z-10 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">01 detail_a</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">ディテール A</span>
+                  <span class="inline-flex items-center gap-1">
+                    <span class="rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-gold-mist">する</span>
+                    <span class="rounded-md border border-ink/10 px-2 py-1 text-[11px] text-ink-muted">やめる</span>
+                  </span>
+                </div>
+                <p class="mt-1 text-[11px] text-ink-faint">ディテール A を再生成しますか？人物は同じプリセットのままです。</p>
+              </div>
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/detail-bg.png?v=2" alt="" class="absolute inset-0 h-full w-full object-cover">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/product-02.png" alt="ディテールB" class="relative z-[1] h-full w-full object-contain mix-blend-multiply">
+                  <span class="absolute left-2 top-2 z-10 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">02 detail_b</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">ディテール B</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+              </div>
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/detail-bg.png?v=2" alt="" class="absolute inset-0 h-full w-full object-cover">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/product-03.png" alt="ディテールC" class="relative z-[1] h-full w-full object-contain mix-blend-multiply">
+                  <span class="absolute left-2 top-2 z-10 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">03 detail_c</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">ディテール C</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="mb-3 text-xs font-medium tracking-[0.18em] uppercase text-ink-muted">Wear · 着用シーン · 04–07</h3>
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl bg-stone shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/wear-office.png" alt="オフィス" class="h-full w-full object-cover">
+                  <span class="absolute left-2 top-2 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">04 office</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">オフィス</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+                <span class="mt-2 block w-full rounded-md border border-ink/15 py-1.5 text-center text-[11px] text-ink-soft">大きさ・位置・回転を調整</span>
+              </div>
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl bg-stone shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/wear-cafe.png" alt="カフェ" class="h-full w-full object-cover">
+                  <span class="absolute left-2 top-2 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">05 cafe</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">カフェ</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+                <span class="mt-2 block w-full rounded-md border border-ink/15 py-1.5 text-center text-[11px] text-ink-soft">大きさ・位置・回転を調整</span>
+              </div>
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl bg-stone shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/wear-date.png" alt="デート" class="h-full w-full object-cover">
+                  <span class="absolute left-2 top-2 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">06 date</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">デート</span>
+                  <span class="text-[11px] text-ink-faint" title="このジョブの画像生成費が上限の200円に達しています">再生成不可（200円）</span>
+                </div>
+                <span class="mt-2 block w-full rounded-md border border-ink/15 py-1.5 text-center text-[11px] text-ink-soft">大きさ・位置・回転を調整</span>
+              </div>
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl bg-stone shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/wear-holiday.png" alt="休日" class="h-full w-full object-cover">
+                  <span class="absolute left-2 top-2 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">07 holiday</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">休日</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+                <span class="mt-2 block w-full rounded-md border border-ink/15 py-1.5 text-center text-[11px] text-ink-soft">大きさ・位置・回転を調整</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="mb-3 text-xs font-medium tracking-[0.18em] uppercase text-ink-muted">Body &amp; Inset · 08–10</h3>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl bg-stone shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/body-tone-01.png" alt="全身トーン1" class="h-full w-full object-cover object-top">
+                  <span class="absolute left-2 top-2 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">08 body · トーン1</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">全身トーン1</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+                <span class="mt-2 block w-full rounded-md border border-ink/15 py-1.5 text-center text-[11px] text-ink-soft">大きさ・位置・回転を調整</span>
+              </div>
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl bg-[#C9BBA8] shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/body-tone-02.png" alt="全身トーン2" class="h-full w-full object-contain">
+                  <span class="absolute left-2 top-2 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">09 body · トーン2</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">全身トーン2</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+                <span class="mt-2 block w-full rounded-md border border-ink/15 py-1.5 text-center text-[11px] text-ink-soft">大きさ・位置・回転を調整</span>
+              </div>
+              <div>
+                <div class="relative aspect-square overflow-hidden rounded-xl bg-stone shadow-lift">
+                  <img src="https://ti-amo-jewelry-studio.surge.sh/assets/wide-inset.png" alt="引き＋インセット" class="h-full w-full object-cover">
+                  <span class="absolute left-2 top-2 rounded bg-ink/75 px-1.5 py-0.5 text-xs text-gold-mist">10 wide_inset</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2">
+                  <span class="text-xs text-ink-muted">引き + インセット</span>
+                  <span class="rounded-md border border-gold/40 bg-gold-mist/40 px-2.5 py-1 text-xs font-medium text-gold-deep">再生成</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between text-[11px] text-ink-muted">
+                  <span>インセット元</span>
+                  <span class="rounded border border-ink/12 bg-white px-2 py-0.5">ディテール A ▾</span>
+                </div>
+                <span class="mt-2 block w-full rounded-md border border-ink/15 py-1.5 text-center text-[11px] text-ink-soft">大きさ・位置・回転を調整</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 05b ADJUST ========== -->
+    <section id="adjust" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 05b</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">レビュー · 位置調整</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">実物切り抜きをドラッグ。右下の丸で大きさ。スライダーで±180°。ピアスは片方を消せる。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / jobs / js-2104 · adjust wear_office</div>
+        </div>
+        <div class="grid gap-8 p-6 md:grid-cols-2 md:p-10">
+          <div>
+            <p class="mb-3 text-xs font-medium tracking-[0.18em] uppercase text-ink-muted">ブレスレット · オフィス</p>
+            <div class="relative aspect-square overflow-hidden rounded-xl border-2 border-gold bg-stone shadow-lift">
+              <img src="assets/adjust-bracelet-office.png" alt="ブレスレットをオフィス着用で位置調整している様子" class="h-full w-full object-cover">
+            </div>
+            <p class="mt-2 text-[11px] text-ink-faint">ジュエリーをドラッグで移動 · 右下の丸で大きさ · スライダーで一周回転</p>
+            <label class="mt-3 block text-[11px] text-ink-faint">回転 -8°
+              <span class="mt-1 block h-1.5 overflow-hidden rounded-full bg-stone-mid"><span class="ml-[42%] block h-1.5 w-2 rounded-full bg-gold"></span></span>
+            </label>
+            <div class="mt-3 flex gap-2">
+              <span class="flex-1 rounded-md border border-ink/15 py-2 text-center text-xs text-ink-soft">リセット</span>
+              <span class="flex-1 rounded-md bg-ink py-2 text-center text-xs font-medium text-gold-mist">完了</span>
+            </div>
+          </div>
+          <div>
+            <p class="mb-3 text-xs font-medium tracking-[0.18em] uppercase text-ink-muted">ピアス · 片方消し（横顔用）</p>
+            <div class="relative aspect-square overflow-hidden rounded-xl border-2 border-gold bg-stone shadow-lift">
+              <img src="assets/adjust-earring-hide.png" alt="ピアスの片方を消して位置調整している様子" class="h-full w-full object-cover">
+            </div>
+            <p class="mt-2 text-[11px] text-ink-faint">左右それぞれドラッグで移動 · 丸のつまみでサイズ · スライダーで一周回転 · 横顔では見えない側を消せます</p>
+            <div class="mt-2 flex gap-2">
+              <span class="flex-1 rounded-md border border-ink/15 py-2 text-center text-xs text-ink-soft">左を消す</span>
+              <span class="flex-1 rounded-md border border-ink/15 py-2 text-center text-xs text-ink-soft">右を戻す</span>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-3">
+              <label class="text-[11px] text-ink-faint">左の回転 4°
+                <span class="mt-1 block h-1.5 rounded-full bg-stone-mid"><span class="ml-[52%] block h-1.5 w-2 rounded-full bg-gold"></span></span>
+              </label>
+              <label class="text-[11px] text-ink-faint">右の回転 0°
+                <span class="mt-1 block h-1.5 rounded-full bg-stone-mid"><span class="ml-[50%] block h-1.5 w-2 rounded-full bg-gold"></span></span>
+              </label>
+            </div>
+            <div class="mt-3 flex gap-2">
+              <span class="flex-1 rounded-md border border-ink/15 py-2 text-center text-xs text-ink-soft">リセット</span>
+              <span class="flex-1 rounded-md bg-ink py-2 text-center text-xs font-medium text-gold-mist">完了</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 06 EXPIRED ========== -->
+    <section id="expired" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 06</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">期限切れ</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">14日後に画像を消す。行は残る。ZIPも再生成も不可。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / jobs / js-1980</div>
+        </div>
+        <div class="flex items-center justify-between border-b border-ink/8 px-6 py-4">
+          <span class="font-display text-xl font-semibold text-ink">Ti amo Jewelry Studio</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-gold-deep">ジョブ</span>
+            <span class="text-gold-deep">プリセット</span>
+            <span class="text-ink-faint">ec-team</span>
+            <span class="text-gold-deep">出る</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-end justify-between gap-3 px-6 pt-6">
+          <div>
+            <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-gold-deep">Job · 期限切れ</p>
+            <h3 class="mt-1 font-display text-2xl font-semibold text-ink">期限切れ</h3>
+          </div>
+          <div class="flex gap-2">
+            <span class="rounded-md border border-danger-soft/40 px-3 py-2 text-xs text-danger">削除</span>
+            <span class="rounded-lg border border-ink/15 px-4 py-2 text-xs text-ink-soft">一覧へ</span>
+          </div>
+        </div>
+        <div class="mx-6 mb-8 mt-5 overflow-hidden rounded-2xl border border-ink/10 md:mx-8">
+          <div class="border-b border-ink/8 px-5 py-3">
+            <p class="font-display text-lg font-semibold text-ink">期限切れ</p>
+          </div>
+          <p class="px-5 py-6 text-sm text-ink-muted">生成結果は14日で削除されました。ZIP は出せません。一覧の削除でこの行も消せます。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 07 PRESETS ========== -->
+    <section id="presets" class="scroll-mt-8">
+      <div class="mb-5 flex items-end justify-between gap-4">
+        <div>
+          <p class="text-xs font-medium tracking-[0.2em] uppercase text-gold-deep">Screen 07</p>
+          <h2 class="mt-1 font-display text-2xl font-semibold text-ink md:text-3xl">プリセット</h2>
+        </div>
+        <p class="max-w-sm text-right text-sm text-ink-faint">人物・背景・トーンの追加／改名／削除。ジョブで使っているものは消せない。</p>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-frame">
+        <div class="flex items-center gap-2 border-b border-ink/8 bg-stone-light px-4 py-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-[#C97B6B]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#D4B896]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-[#7A9E7E]"></span>
+          <div class="ml-3 flex-1 rounded-md bg-white px-3 py-1 text-center text-xs tracking-wide text-ink-muted">localhost:3000 / presets</div>
+        </div>
+        <div class="flex items-center justify-between border-b border-ink/8 px-6 py-4">
+          <span class="font-display text-xl font-semibold text-ink">Ti amo Jewelry Studio</span>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-gold-deep">ジョブ</span>
+            <span class="text-gold-deep">プリセット</span>
+            <span class="text-ink-faint">ec-team</span>
+            <span class="text-gold-deep">出る</span>
+          </div>
+        </div>
+
+        <div class="space-y-5 p-6 md:p-8">
+          <div>
+            <p class="text-[11px] font-medium tracking-[0.2em] uppercase text-gold-deep">Presets</p>
+            <h3 class="mt-1 font-display text-2xl font-semibold text-ink">プリセット</h3>
+            <p class="mt-1 text-sm text-ink-muted">人物・ディテール背景・全身トーンを追加できます。ジョブで使っているものは消せません。</p>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-ink/10">
+            <div class="flex items-center justify-between border-b border-ink/8 px-5 py-3">
+              <p class="font-display text-lg font-semibold text-ink">人物</p>
+              <span class="text-xs text-ink-faint">3 人 · 写真なしは生成時に顔を作ります</span>
+            </div>
+            <div class="space-y-4 p-5">
+              <div class="grid grid-cols-3 gap-3">
+                <div class="space-y-1.5">
+                  <div class="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#8C847C]">
+                    <img src="https://ti-amo-jewelry-studio.surge.sh/assets/persona-01.png" alt="" class="absolute inset-0 h-full w-full object-cover object-[center_28%]">
+                    <span class="absolute bottom-2 left-2 rounded bg-ink/70 px-1.5 py-0.5 text-xs text-white">Sofia</span>
+                  </div>
+                  <p class="text-[11px] text-gold-deep">名前 · 写真 · 削除</p>
+                </div>
+                <div class="space-y-1.5">
+                  <div class="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#8A8A8A]">
+                    <img src="https://ti-amo-jewelry-studio.surge.sh/assets/persona-02.png" alt="" class="absolute inset-0 h-full w-full object-cover object-[center_20%]">
+                    <span class="absolute bottom-2 left-2 rounded bg-ink/70 px-1.5 py-0.5 text-xs text-white">Elena</span>
+                  </div>
+                  <p class="text-[11px] text-gold-deep">名前 · 写真 · 削除</p>
+                </div>
+                <div class="space-y-1.5">
+                  <div class="relative aspect-[3/4] overflow-hidden rounded-xl bg-[#C8C8C8]">
+                    <img src="https://ti-amo-jewelry-studio.surge.sh/assets/persona-03.png" alt="" class="absolute inset-0 h-full w-full object-cover object-[center_12%]">
+                    <span class="absolute bottom-2 left-2 rounded bg-ink/70 px-1.5 py-0.5 text-xs text-white">Mia</span>
+                  </div>
+                  <p class="text-[11px] text-gold-deep">名前 · 写真 · 削除</p>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-lg border border-ink/10 bg-white px-3 py-2 text-xs text-ink-faint">名前（例: Giulia）</span>
+                <span class="rounded-lg border border-ink/10 bg-white px-3 py-2 text-xs text-ink-faint">写真を選ぶ</span>
+                <span class="rounded-lg bg-gold-deep px-4 py-2 text-xs font-medium text-white">人物を追加</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-ink/10">
+            <div class="flex items-center justify-between border-b border-ink/8 px-5 py-3">
+              <p class="font-display text-lg font-semibold text-ink">ディテール背景</p>
+              <span class="text-xs text-ink-faint">4 件 · 写真を上げるとディテール3枚の背景になります</span>
+            </div>
+            <div class="space-y-4 p-5">
+              <div class="grid grid-cols-4 gap-3">
+                <div class="space-y-1">
+                  <div class="aspect-square overflow-hidden rounded-lg border border-ink/10">
+                    <img src="https://ti-amo-jewelry-studio.surge.sh/assets/detail-bg.png?v=2" alt="" class="h-full w-full object-cover">
+                  </div>
+                  <p class="text-[11px] text-ink-muted">白大理石</p>
+                  <p class="text-[11px] text-gold-deep">名前 · 写真 · 削除</p>
+                </div>
+                <div class="space-y-1">
+                  <div class="aspect-square rounded-lg marble-b"></div>
+                  <p class="text-[11px] text-ink-muted">トラバーチン</p>
+                  <p class="text-[11px] text-gold-deep">名前 · 写真 · 削除</p>
+                </div>
+                <div class="space-y-1">
+                  <div class="aspect-square rounded-lg linen"></div>
+                  <p class="text-[11px] text-ink-muted">リネン</p>
+                  <p class="text-[11px] text-gold-deep">名前 · 写真 · 削除</p>
+                </div>
+                <div class="space-y-1">
+                  <div class="aspect-square rounded-lg marble-c"></div>
+                  <p class="text-[11px] text-ink-muted">黒石</p>
+                  <p class="text-[11px] text-gold-deep">名前 · 写真 · 削除</p>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-lg border border-ink/10 bg-white px-3 py-2 text-xs text-ink-faint">名前（例: ベージュ石）</span>
+                <span class="rounded-lg border border-ink/10 bg-white px-3 py-2 text-xs text-ink-faint">写真を選ぶ</span>
+                <span class="rounded-lg bg-gold-deep px-4 py-2 text-xs font-medium text-white">背景を追加</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-2xl border border-ink/10">
+            <div class="flex items-center justify-between border-b border-ink/8 px-5 py-3">
+              <p class="font-display text-lg font-semibold text-ink">全身トーン</p>
+              <span class="text-xs text-ink-faint">4 件 · ジョブではちょうど2つ選びます</span>
+            </div>
+            <div class="space-y-4 p-5">
+              <div class="flex flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                  <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">オフィス</span>
+                  <span class="text-[11px] text-gold-deep">名前 · 削除</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">休日</span>
+                  <span class="text-[11px] text-gold-deep">名前 · 削除</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">エレガント</span>
+                  <span class="text-[11px] text-gold-deep">名前 · 削除</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="rounded-full bg-ink px-3 py-1.5 text-xs text-gold-mist">リラックス</span>
+                  <span class="text-[11px] text-gold-deep">名前 · 削除</span>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-lg border border-ink/10 bg-white px-3 py-2 text-xs text-ink-faint">名前（例: フォーマル）</span>
+                <span class="rounded-lg bg-gold-deep px-4 py-2 text-xs font-medium text-white">トーンを追加</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-ink/10 bg-ink px-6 py-10 text-center md:px-12">
+      <p class="font-display text-2xl font-semibold text-gold-bright md:text-3xl">3枚を上げる → 待つ → 直す → ZIP</p>
+      <p class="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/50">
+        一覧・プリセット・14日削除・1ジョブ200円・位置のドラッグ回転まで、いま動いている画面の骨格です。
+        実物は <span class="text-white/70">localhost:3000</span>（生成）と学校提出用の Vercel（ログイン＋一覧）です。
+      </p>
+    </section>
+  </main>
+
+  <footer class="border-t border-ink/10 py-8 text-center text-xs text-ink-muted">
+    Ti amo Jewelry Studio · 現行 UI モック · 旧版
+    <a class="text-gold-deep" href="https://ti-amo-jewelry-studio.surge.sh/">ti-amo-jewelry-studio.surge.sh</a>
+    · ローカル <code>docs/mockups-v2/index.html</code>
+  </footer>
+</body>
+</html>

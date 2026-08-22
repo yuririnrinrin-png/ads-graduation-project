@@ -47,4 +47,4 @@ python -m worker.pipeline
   で実際の合成画像を焼き直す
 - ピアスはアンカーが左右 2 点あり、`transforms` 配列（アンカーごとに `{scale, offsetX, offsetY}`）で
   左右を個別に調整できる。他カテゴリはアンカー 1 点なので配列の要素数は 1
-- 見た目の正本: [公開モック](https://ti-amo-jewelry-studio.surge.sh) / `docs/mockups/product-ui.html`
+- 見た目の正本: [現行UIモック](https://ti-amo-jewelry-studio-v2.surge.sh) / `docs/mockups-v2/index.html`（Phase 0 旧版は [こちら](https://ti-amo-jewelry-studio.surge.sh)）

@@ -20,6 +20,7 @@ Claude Code でも同じ一文で続けられる。ルートの `CLAUDE.md` が�
 
 - **フェーズ:** Phase 5。**14日削除・1ジョブ200円停止・学校用 Vercel 公開は入った。**
 - **学校提出 URL:** https://ads-graduation-project-web.vercel.app （ログイン必須。`ec-team` / `studio`）。先生が入れるところまで確認済み。
+- **現行 UI モック:** https://ti-amo-jewelry-studio-v2.surge.sh （本実装の画面。旧 Phase 0 は https://ti-amo-jewelry-studio.surge.sh に残置）
 - **fal.ai:** 2026-08-17〜18 にアカウントロック（`TOP_UP` / `Exhausted balance`）。ダッシュボードに残高があっても API が 403 になる既知不具合。**2026-08-21 に解除済み**。サポートは **support@fal.ai**（英語）。
 - **再開ジョブ:** `cmsxf1t6y000mfdbk361q6bdo` は **ready**。品質確認ジョブ: `cmt2yl1rd0001fdngeoj80agb`（引き＋インセットは正面の写真で通った）。
 - **品質プロンプトの追加いじり**は、ユーザーが「品質を再開」と言うまでやらない。
