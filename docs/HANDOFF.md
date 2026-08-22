@@ -4,6 +4,8 @@
 
 開始フレーズ: 「`docs/HANDOFF.md` を読んで続けてください」
 
+Claude Code でも同じ一文で続けられる。ルートの `CLAUDE.md` が自動で読まれ、人物7枚の検査は `.claude/settings.json` が `.cursor/hooks/check_scene_spec.py` を呼ぶ。
+
 正本（このメモより優先）:
 
 - [docs/REQUIREMENTS.md](REQUIREMENTS.md) — 決まっていること／まだ決めてないこと
@@ -185,6 +187,7 @@
 2. 人物シーンのプロンプト／QA は、ユーザーが「品質を再開」と言うまで触らない。
 3. 会社で毎日使う段階になるまで、ワーカーのクラウド接続（Upstash + 画像の S3/R2）はやらない。
 4. `main` push 後に Vercel が自動ビルドする。失敗していたら Deployments のログを見る。
+5. Claude Code で続けるときも開始フレーズは同じ。`CLAUDE.md` と `.claude/settings.json` で約束・機械チェックを読む。チャット全文が要るときだけ `agent-transcripts` をこの PC からコピー（Git に上げない）。
 
 ---
 

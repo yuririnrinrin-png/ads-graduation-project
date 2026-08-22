@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|StrReplace",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/run_scene_spec.py",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/run_scene_spec.py",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

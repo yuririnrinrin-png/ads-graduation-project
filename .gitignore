@@ -22,6 +22,8 @@ dist/
 .DS_Store
 Thumbs.db
 *.log
+.claude/settings.local.json
+.claude/.hook-state/
 
 # Python
 .pytest_cache/
